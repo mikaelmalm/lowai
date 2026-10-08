@@ -1,0 +1,95 @@
+:root {
+  color-scheme: dark;
+  font-family: "Segoe UI", "Noto Color Emoji", sans-serif;
+  background: #171b20;
+  color: #e7ecf1;
+}
+
+* { box-sizing: border-box; }
+body, html, #root { margin: 0; height: 100%; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+.app { display: flex; height: 100%; }
+.sidebar {
+  width: 280px;
+  background: #1f2328;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: auto;
+}
+.sidebar button, .sidebar input {
+  background: #2a3038;
+  border: 1px solid #3a424c;
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.project-switcher, .session-actions { display: flex; flex-direction: column; gap: 6px; }
+.project-name { text-align: left; }
+.project-menu { display: none; flex-direction: column; gap: 4px; }
+.project-menu.open { display: flex; }
+.session-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.session-list li { display: flex; gap: 4px; align-items: center; }
+.session-row {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  text-align: left;
+  background: transparent;
+  border: 0;
+}
+.session-list li.active .session-row { background: #2c343d; border-radius: 8px; }
+.mask { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.session-label { display: flex; flex-direction: column; }
+.session-label small { color: #9aa6b2; }
+.unread { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.close { background: transparent; border: 0; color: #9aa6b2; }
+
+main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; background: #101418; }
+.session-split { flex: 1; display: flex; min-width: 0; min-height: 0; }
+.chat-column { flex: 1; min-width: 0; min-height: 0; display: flex; }
+.sash { width: 4px; flex: none; cursor: col-resize; background: #2a3038; }
+.terminal-column { display: flex; flex-direction: column; min-height: 0; flex: none; background: #101418; }
+.terminal-column.hidden { display: none; }
+.terminal-column header { display: flex; gap: 8px; align-items: center; padding: 8px 10px; }
+.terminal-column header button { background: #2a3038; border: 1px solid #3a424c; border-radius: 8px; padding: 4px 8px; }
+.terminal-error { padding: 8px 10px; color: #f0c6a0; }
+.terminal-host { flex: 1; min-height: 0; }
+.terminal-host .xterm { height: 100%; }
+.banner { display: flex; justify-content: space-between; gap: 12px; padding: 8px 16px; background: #3a2a1a; }
+.chat { display: flex; flex-direction: column; height: 100%; }
+.chat-header, .composer { display: flex; gap: 12px; align-items: center; padding: 12px 16px; }
+.chat-header { justify-content: space-between; border-bottom: 1px solid #2a3038; }
+.chat-header span, .empty p { color: #9aa6b2; }
+.chat-header div { display: flex; flex-direction: column; }
+.transcript { flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.user-bubble {
+  align-self: flex-end;
+  max-width: 70%;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  color: white;
+  white-space: pre-wrap;
+}
+.agent-card {
+  background: #1b2128;
+  border-left: 4px solid var(--turtle);
+  border-radius: 12px;
+  padding: 12px;
+}
+.agent-card header, .agent-card footer { display: flex; gap: 10px; color: #9aa6b2; font-size: 0.85rem; }
+.agent-card a { color: var(--turtle, #8ec8ff); }
+.thinking { color: #9aa6b2; font-style: italic; }
+.tool-row { display: flex; gap: 8px; align-items: center; background: #12171c; border-radius: 8px; padding: 6px 8px; margin: 6px 0; }
+.tool-row.spinning code { opacity: 0.7; }
+.system-card { background: #2a2420; border-radius: 10px; padding: 10px 12px; white-space: pre-wrap; }
+.code-block { position: relative; }
+.code-block button { position: absolute; right: 8px; top: 8px; }
+.code-block pre { overflow: auto; background: #0e1216; padding: 12px; border-radius: 8px; }
+.composer textarea { flex: 1; resize: vertical; background: #1b2128; border: 1px solid #2a3038; border-radius: 10px; padding: 8px; }
+.composer button { border: 0; border-radius: 10px; padding: 10px 16px; color: white; }
+.empty { margin: auto; text-align: center; }
