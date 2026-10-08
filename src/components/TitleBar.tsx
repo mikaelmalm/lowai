@@ -1,7 +1,20 @@
+import { useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 export function TitleBar() {
   const win = getCurrentWindow();
+  useEffect(() => {
+    let stopped = false;
+    const mark = (maximized: boolean) => document.documentElement.classList.toggle("maximized", maximized);
+    void win.isMaximized().then((maximized) => { if (!stopped) mark(maximized); });
+    const listen = win.onResized(() => {
+      void win.isMaximized().then((maximized) => { if (!stopped) mark(maximized); });
+    });
+    return () => {
+      stopped = true;
+      void listen.then((unlisten) => unlisten());
+    };
+  }, []);
   return (
     <header
       className="titlebar"

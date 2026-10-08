@@ -12,7 +12,7 @@
   --warn: #f0c6a0;
   --banner: #3a2a1a;
   --note: #2a2420;
-  background: #171b20;
+  background: transparent;
   color: var(--ink);
   scrollbar-color: var(--line) transparent;
 }
@@ -26,7 +26,16 @@ button, input, textarea, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 button:disabled { opacity: 0.45; cursor: default; }
 
-.window { height: 100%; display: flex; flex-direction: column; background: var(--bg); }
+.window {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+html.maximized .window { border-radius: 0; border-color: transparent; }
 .titlebar {
   flex: none;
   height: 32px;

@@ -18,7 +18,8 @@
         "width": 1200,
         "height": 800,
         "decorations": false,
-        "backgroundColor": "#1f2328"
+        "transparent": true,
+        "shadow": true
       }
     ],
     "security": {
