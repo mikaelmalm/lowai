@@ -42,10 +42,26 @@ pub fn state_dir_for(os: &str, home: &Path, appdata: Option<&Path>, xdg_data_hom
 }
 
 pub fn allow_navigation(url: &str, dev: bool) -> bool {
-    if url.starts_with("tauri://localhost") {
+    // macOS and Linux serve the release build as tauri://localhost.
+    // Windows and Android serve it as http://tauri.localhost or https://tauri.localhost.
+    if app_origin(url) {
         return true;
     }
     dev && (url.starts_with("http://localhost") || url.starts_with("http://127.0.0.1"))
+}
+
+fn app_origin(url: &str) -> bool {
+    const PREFIXES: [&str; 3] = [
+        "tauri://localhost",
+        "http://tauri.localhost",
+        "https://tauri.localhost",
+    ];
+    PREFIXES.iter().any(|prefix| {
+        let Some(rest) = url.strip_prefix(prefix) else {
+            return false;
+        };
+        rest.is_empty() || matches!(rest.as_bytes().first(), Some(b'/' | b'?' | b'#' | b':'))
+    })
 }
 
 pub fn parse_marked_path(output: &str) -> Option<String> {
@@ -362,6 +378,10 @@ mod tests {
     #[test]
     fn navigation_allows_the_app_origin() {
         assert!(allow_navigation("tauri://localhost/", false));
+        assert!(allow_navigation("http://tauri.localhost/", false));
+        assert!(allow_navigation("https://tauri.localhost/index.html", false));
+        assert!(allow_navigation("http://tauri.localhost:80/", false));
+        assert!(!allow_navigation("http://tauri.localhost.evil/", false));
         assert!(!allow_navigation("https://example.com", false));
         assert!(allow_navigation("http://localhost:1420/", true));
         assert!(!allow_navigation("http://localhost:1420/", false));

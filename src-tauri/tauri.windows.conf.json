@@ -1,5 +1,19 @@
 {
   "bundle": {
     "targets": ["nsis"]
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "lowai",
+        "width": 1200,
+        "height": 800,
+        "decorations": false,
+        "transparent": false,
+        "shadow": true,
+        "backgroundColor": "#101418"
+      }
+    ]
   }
 }
