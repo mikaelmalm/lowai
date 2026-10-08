@@ -5,7 +5,7 @@ import { ChatView } from "./components/ChatView";
 import { Sidebar } from "./components/Sidebar";
 import { TerminalPane } from "./components/TerminalPane";
 import { useSessions } from "./useSessions";
-import { clampSidebarWidth, sidebarShortcut } from "./sidebar/rules";
+import { clampSidebarWidth, sidebarModifier, sidebarShortcut } from "./sidebar/rules";
 import { clampTerminalWidth, DEFAULT_TERMINAL_WIDTH } from "./terminal/rules";
 import "./theme/theme.css";
 
@@ -45,7 +45,7 @@ export function App() {
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       const terminalFocused = Boolean(document.activeElement?.closest(".terminal-column"));
-      if (!sidebarShortcut(event, terminalFocused)) return;
+      if (!sidebarShortcut(event, terminalFocused, sidebarModifier(navigator.platform))) return;
       event.preventDefault();
       toggleSidebarRef.current();
     }
@@ -110,6 +110,8 @@ export function App() {
           });
           void api.closeSession(id);
         }}
+        agents={api.agents}
+        onAgent={api.setAgent}
         onNewSession={() => api.addSession(session?.folder || ".")}
         onBrowse={() => { void api.browse(); }}
         onTypedFolder={api.addSession}
@@ -152,6 +154,7 @@ export function App() {
                 onSend={(text) => api.send(session.id, text)}
                 onModel={(model) => { void api.changeModel(session.id, model); }}
                 onLink={api.openLink}
+                onPermission={(requestId, allow) => api.answerPermission(session.id, requestId, allow)}
                 onTerminal={() => openTerminal(session.id)}
                 onSidebar={api.toggleSidebar}
               />
@@ -197,8 +200,12 @@ export function App() {
         ) : (
           <section className="empty">
             <button type="button" onClick={api.toggleSidebar}>Sidebar</button>
-            <h1>AI Shell</h1>
-            <p>Open a folder to start a Grok session. Sessions in other projects keep running.</p>
+            <h1>lowai</h1>
+            {api.ready && api.agents.length === 0 ? (
+              <p className="system-card">No agent CLI was found.</p>
+            ) : (
+              <p>Open a folder to start a session. Sessions in other projects keep running.</p>
+            )}
           </section>
         )}
       </main>

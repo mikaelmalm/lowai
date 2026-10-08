@@ -26,6 +26,20 @@ describe("reduceBlocks", () => {
     expect((twice[0] as { text: string }).text).toBe("purple");
   });
 
+  it("adds one permission card and ignores a repeat of the same request", () => {
+    const event = {
+      _session_id: "s",
+      kind: "permission" as const,
+      requestId: "p1",
+      name: "Bash",
+      input: { command: "ls" },
+    };
+    const first = reduceBlocks([], event);
+    const again = reduceBlocks(first, event);
+    expect(again).toHaveLength(1);
+    expect(again[0]).toMatchObject({ type: "permission", id: "p1", name: "Bash", answered: null });
+  });
+
   it("updates one tool row when a later start repeats the id", () => {
     const started = reduceBlocks([], event({ kind: "tool_start", toolId: "t1", name: "grep", input: { pattern: "a" } }));
     const again = reduceBlocks(started, event({ kind: "tool_start", toolId: "t1", name: "grep", input: { pattern: "ab" } }));

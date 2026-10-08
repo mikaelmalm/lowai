@@ -9,9 +9,15 @@ export function clampSidebarWidth(width: number, windowWidth: number, terminalWi
   return Math.min(Math.max(desired, MIN_SIDEBAR_WIDTH), max);
 }
 
+export function sidebarModifier(platform: string): "ctrl" | "meta" {
+  return /mac/i.test(platform) ? "meta" : "ctrl";
+}
+
 export function sidebarShortcut(
   event: { ctrlKey: boolean; shiftKey: boolean; altKey: boolean; metaKey: boolean; key: string },
   terminalFocused: boolean,
+  modifier: "ctrl" | "meta" = "ctrl",
 ): boolean {
-  return event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && event.key.toLowerCase() === "b" && !terminalFocused;
+  const held = modifier === "meta" ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;
+  return held && !event.shiftKey && !event.altKey && event.key.toLowerCase() === "b" && !terminalFocused;
 }

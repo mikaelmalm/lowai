@@ -35,5 +35,26 @@ export function reduceBlocks(blocks: AgentBlock[], event: AgentEvent): AgentBloc
     next[index] = { ...existing, name, input, done };
     return next;
   }
+  if (event.kind === "permission" && event.requestId) {
+    if (blocks.some((block) => block.type === "permission" && block.id === event.requestId)) return blocks;
+    return [
+      ...blocks,
+      {
+        type: "permission",
+        id: event.requestId,
+        name: event.name ?? "tool",
+        input: event.input ?? null,
+        answered: null,
+      },
+    ];
+  }
   return blocks;
+}
+
+export function answerBlock(blocks: AgentBlock[], requestId: string, allow: boolean): AgentBlock[] {
+  return blocks.map((block) =>
+    block.type === "permission" && block.id === requestId && block.answered == null
+      ? { ...block, answered: allow ? "allow" : "deny" }
+      : block,
+  );
 }

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "AI Shell",
+  "productName": "lowai",
   "version": "0.1.0",
-  "identifier": "com.malm.aishell",
+  "identifier": "com.malm.lowai",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://127.0.0.1:1420",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "AI Shell",
+        "title": "lowai",
         "width": 1200,
         "height": 800,
         "titleBarStyle": "Transparent",

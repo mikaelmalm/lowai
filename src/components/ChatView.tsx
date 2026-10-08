@@ -1,6 +1,6 @@
 import { useState } from "react";
+import { modelsFor } from "../state/agents";
 import type { Session } from "../state/types";
-import { MODELS } from "../state/types";
 import { TURTLES } from "../theme/turtles";
 import { AgentCard } from "./AgentCard";
 import { CardErrorBoundary } from "./CardErrorBoundary";
@@ -10,14 +10,17 @@ type Props = {
   onSend: (text: string) => Promise<{ restore?: string }>;
   onModel: (model: string) => void;
   onLink: (url: string) => void;
+  onPermission: (requestId: string, allow: boolean) => void;
   onTerminal: () => void;
   onSidebar: () => void;
 };
 
-export function ChatView({ session, onSend, onModel, onLink, onTerminal, onSidebar }: Props) {
+export function ChatView({ session, onSend, onModel, onLink, onPermission, onTerminal, onSidebar }: Props) {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const turtle = TURTLES.find((item) => item.name === session.turtle) ?? TURTLES[0];
+  const models = modelsFor(session.agent);
+  const modelOptions = models.includes(session.model) ? models : [session.model, ...models];
   return (
     <section className="chat" style={{ ["--turtle" as string]: turtle.color }}>
       <header className="chat-header">
@@ -30,7 +33,7 @@ export function ChatView({ session, onSend, onModel, onLink, onTerminal, onSideb
         <label>
           Model
           <select value={session.model} onChange={(event) => onModel(event.target.value)}>
-            {MODELS.map((model) => (
+            {modelOptions.map((model) => (
               <option key={model} value={model}>{model}</option>
             ))}
           </select>
@@ -46,7 +49,7 @@ export function ChatView({ session, onSend, onModel, onLink, onTerminal, onSideb
           }
           return (
             <CardErrorBoundary key={message.id}>
-              <AgentCard message={message} turtle={turtle.name} color={turtle.color} folder={session.folder} onLink={onLink} />
+              <AgentCard message={message} turtle={turtle.name} color={turtle.color} folder={session.folder} onLink={onLink} onPermission={onPermission} />
             </CardErrorBoundary>
           );
         })}

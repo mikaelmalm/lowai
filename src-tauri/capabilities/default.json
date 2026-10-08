@@ -11,6 +11,8 @@
     "allow-send-message",
     "allow-set-model",
     "allow-close-session",
+    "allow-available-agents",
+    "allow-answer-permission",
     "allow-load-app-state",
     "allow-save-app-state",
     "allow-quarantine-app-state",

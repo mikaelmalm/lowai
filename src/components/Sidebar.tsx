@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from "react";
+import type { AgentId } from "../state/agents";
 import type { AppState } from "../state/types";
 import { canDeleteProject } from "../state/projects";
 import { TURTLES } from "../theme/turtles";
@@ -13,6 +14,8 @@ type Props = {
   onSelect: (id: string) => void;
   onRename: (id: string, label: string) => void;
   onClose: (id: string) => void;
+  agents: string[];
+  onAgent: (agent: AgentId) => void;
   onNewSession: () => void;
   onBrowse: () => void;
   onTypedFolder: (folder: string) => void;
@@ -76,6 +79,18 @@ export function Sidebar(props: Props) {
         ) : null}
       </div>
       <div className="session-actions">
+        <label>
+          Agent
+          <select
+            aria-label="Agent"
+            value={props.agents.includes(props.state.selectedAgent) ? props.state.selectedAgent : ""}
+            onChange={(event) => props.onAgent(event.target.value as AgentId)}
+          >
+            {props.agents.map((agent) => (
+              <option key={agent} value={agent}>{agent}</option>
+            ))}
+          </select>
+        </label>
         <button type="button" onClick={props.onNewSession}>🍕 New session</button>
         <button type="button" onClick={props.onBrowse}>📂 Browse…</button>
         <form
@@ -109,7 +124,7 @@ export function Sidebar(props: Props) {
                 ) : (
                   <span className="session-label">
                     {session.label}
-                    <small>{session.model}</small>
+                    <small>{session.agent} · {session.model}</small>
                   </span>
                 )}
                 {session.unread ? <i className="unread" style={{ background: turtle.color }} /> : null}

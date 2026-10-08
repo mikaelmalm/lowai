@@ -1,8 +1,12 @@
+mod permission_mcp;
 mod pty;
 
 use ai_shell_core::{
-    load_state, save_state, state_dir, GrokHost, HostEvent, LoadOutcome, SessionError, StartRequest,
+    available_agents as lookup_agents, load_state, save_state, state_dir, GrokHost, HostEvent, LoadOutcome, SessionError,
+    StartRequest,
 };
+
+pub use permission_mcp::run_permission_mcp;
 use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -34,14 +38,6 @@ enum CommandError {
     Other { message: String },
 }
 
-fn guard_dir() -> PathBuf {
-    let beside_source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("grok-guard");
-    if beside_source.is_dir() {
-        return beside_source;
-    }
-    beside_source
-}
-
 fn map_error(err: SessionError) -> CommandError {
     match err {
         SessionError::MissingFolder => CommandError::MissingFolder { message: err.to_string() },
@@ -61,6 +57,7 @@ async fn start_session(
     session_id: String,
     cwd: String,
     model: String,
+    agent: String,
     agent_session_id: Option<String>,
 ) -> Result<String, CommandError> {
     state
@@ -77,15 +74,26 @@ async fn start_session(
             },
             model,
             agent_session_id,
-            guard_dir: guard_dir(),
+            agent,
         })
         .await
         .map_err(map_error)
 }
 
 #[tauri::command]
-async fn send_message(state: State<'_, AppState>, session_id: String, text: String) -> Result<(), CommandError> {
+async fn send_message(state: State<'_, AppState>, session_id: String, text: String) -> Result<Option<String>, CommandError> {
     state.host.send(&session_id, &text).await.map_err(map_error)
+}
+
+#[tauri::command]
+fn available_agents() -> Vec<String> {
+    lookup_agents()
+}
+
+#[tauri::command]
+async fn answer_permission(state: State<'_, AppState>, session_id: String, request_id: String, allow: bool) -> Result<(), ()> {
+    state.host.answer_permission(&session_id, &request_id, allow).await;
+    Ok(())
 }
 
 #[tauri::command]
@@ -183,22 +191,27 @@ fn emit_host(app: &AppHandle, event: HostEvent) {
         #[serde(rename = "numTurns")]
         num_turns: Option<u64>,
         stderr: Option<String>,
+        #[serde(rename = "requestId")]
+        request_id: Option<String>,
     }
     let payload = match event {
         HostEvent::TextDelta { session_id, text } => Payload {
-            session_id, kind: "text_delta", text: Some(text), tool_id: None, name: None, input: None, cost_usd: None, num_turns: None, stderr: None,
+            session_id, kind: "text_delta", text: Some(text), tool_id: None, name: None, input: None, cost_usd: None, num_turns: None, stderr: None, request_id: None,
         },
         HostEvent::ToolStart { session_id, tool_id, name, input } => Payload {
-            session_id, kind: "tool_start", text: None, tool_id: Some(tool_id), name: Some(name), input: Some(input), cost_usd: None, num_turns: None, stderr: None,
+            session_id, kind: "tool_start", text: None, tool_id: Some(tool_id), name: Some(name), input: Some(input), cost_usd: None, num_turns: None, stderr: None, request_id: None,
         },
         HostEvent::ToolDone { session_id, tool_id } => Payload {
-            session_id, kind: "tool_done", text: None, tool_id: Some(tool_id), name: None, input: None, cost_usd: None, num_turns: None, stderr: None,
+            session_id, kind: "tool_done", text: None, tool_id: Some(tool_id), name: None, input: None, cost_usd: None, num_turns: None, stderr: None, request_id: None,
         },
         HostEvent::TurnDone { session_id, cost_usd, num_turns } => Payload {
-            session_id, kind: "turn_done", text: None, tool_id: None, name: None, input: None, cost_usd, num_turns, stderr: None,
+            session_id, kind: "turn_done", text: None, tool_id: None, name: None, input: None, cost_usd, num_turns, stderr: None, request_id: None,
         },
         HostEvent::ProcessExited { session_id, stderr } => Payload {
-            session_id, kind: "process_exited", text: None, tool_id: None, name: None, input: None, cost_usd: None, num_turns: None, stderr: Some(stderr),
+            session_id, kind: "process_exited", text: None, tool_id: None, name: None, input: None, cost_usd: None, num_turns: None, stderr: Some(stderr), request_id: None,
+        },
+        HostEvent::Permission { session_id, request_id, name, input } => Payload {
+            session_id, kind: "permission", text: None, tool_id: None, name: Some(name), input: Some(input), cost_usd: None, num_turns: None, stderr: None, request_id: Some(request_id),
         },
     };
     let _ = app.emit("agent-event", payload);
@@ -235,6 +248,8 @@ pub fn run() {
             send_message,
             set_model,
             close_session,
+            available_agents,
+            answer_permission,
             load_app_state,
             save_app_state,
             quarantine_app_state,
@@ -243,6 +258,13 @@ pub fn run() {
             resize_terminal,
             close_terminal
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running ai-shell");
+        .build(tauri::generate_context!())
+        .expect("error while running lowai")
+        .run(|app, event| {
+            if matches!(event, tauri::RunEvent::Exit) {
+                if let Some(state) = app.try_state::<AppState>() {
+                    state.host.close_all_blocking();
+                }
+            }
+        });
 }

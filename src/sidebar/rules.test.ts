@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampSidebarWidth, DEFAULT_SIDEBAR_WIDTH, sidebarShortcut } from "./rules";
+import { clampSidebarWidth, DEFAULT_SIDEBAR_WIDTH, sidebarModifier, sidebarShortcut } from "./rules";
 
 const ctrlB = { ctrlKey: true, shiftKey: false, altKey: false, metaKey: false, key: "b" };
 
@@ -17,5 +17,10 @@ describe("sidebar rules", () => {
     expect(sidebarShortcut(ctrlB, true)).toBe(false);
     expect(sidebarShortcut({ ...ctrlB, key: "a" }, false)).toBe(false);
     expect(sidebarShortcut({ ...ctrlB, shiftKey: true }, false)).toBe(false);
+    expect(sidebarModifier("MacIntel")).toBe("meta");
+    expect(sidebarModifier("Win32")).toBe("ctrl");
+    expect(sidebarModifier("Linux x86_64")).toBe("ctrl");
+    expect(sidebarShortcut({ ...ctrlB, ctrlKey: false, metaKey: true }, false, "meta")).toBe(true);
+    expect(sidebarShortcut(ctrlB, false, "meta")).toBe(false);
   });
 });

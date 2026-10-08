@@ -9,20 +9,32 @@ use std::thread;
 pub type Subscriber = Arc<dyn Fn(Vec<u8>) -> bool + Send + Sync>;
 pub type ExitHook = Arc<dyn Fn(Option<i32>) + Send + Sync>;
 
-const BASH: &str = "/bin/bash";
-
 pub fn resolve_shell(shell: Option<&str>) -> Result<PathBuf, String> {
-    match shell {
-        Some(value) if !value.is_empty() => Ok(PathBuf::from(value)),
-        _ => {
-            let bash = PathBuf::from(BASH);
-            if bash.is_file() {
-                Ok(bash)
-            } else {
-                Err("SHELL is unset and /bin/bash is missing".into())
-            }
-        }
+    if let Some(value) = shell.filter(|value| !value.is_empty()) {
+        return Ok(PathBuf::from(value));
     }
+    let os = if cfg!(windows) {
+        "windows"
+    } else if cfg!(target_os = "macos") {
+        "macos"
+    } else {
+        "linux"
+    };
+    fallback_shell(os, |path| Path::new(path).is_file())
+}
+
+pub fn fallback_shell(os: &str, exists: impl Fn(&str) -> bool) -> Result<PathBuf, String> {
+    let candidates: &[&str] = match os {
+        "windows" => return Ok(PathBuf::from("powershell.exe")),
+        "macos" => &["/bin/zsh", "/bin/bash"],
+        _ => &["/bin/bash", "/bin/zsh"],
+    };
+    candidates
+        .iter()
+        .copied()
+        .find(|path| exists(path))
+        .map(PathBuf::from)
+        .ok_or_else(|| "SHELL is unset and no shell was found".into())
 }
 
 type MasterSlot = Arc<Mutex<Option<Box<dyn portable_pty::MasterPty + Send>>>>;
@@ -177,6 +189,7 @@ fn wait_for(mut probe: impl FnMut() -> bool) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(unix)]
     use std::fs;
 
     fn temp_dir() -> PathBuf {
@@ -199,12 +212,30 @@ mod tests {
     }
 
     #[test]
-    fn resolve_shell_falls_back_to_bash() {
-        assert_eq!(resolve_shell(None).unwrap(), PathBuf::from("/bin/bash"));
-        assert_eq!(resolve_shell(Some("")).unwrap(), PathBuf::from("/bin/bash"));
+    fn resolve_shell_uses_an_explicit_path_and_the_platform_default() {
         assert_eq!(resolve_shell(Some("/bin/sh")).unwrap(), PathBuf::from("/bin/sh"));
+        let resolved = resolve_shell(None).unwrap();
+        if cfg!(windows) {
+            assert_eq!(resolved, PathBuf::from("powershell.exe"));
+        } else if cfg!(target_os = "macos") {
+            assert!(resolved.ends_with("zsh") || resolved.ends_with("bash"));
+        } else {
+            assert_eq!(resolved, PathBuf::from("/bin/bash"));
+        }
+        assert_eq!(resolve_shell(Some("")).unwrap(), resolved);
     }
 
+    #[test]
+    fn fallback_shell_picks_powershell_zsh_or_bash() {
+        let missing = |_: &str| false;
+        let present = |_: &str| true;
+        assert_eq!(fallback_shell("windows", missing).unwrap(), PathBuf::from("powershell.exe"));
+        assert_eq!(fallback_shell("macos", present).unwrap(), PathBuf::from("/bin/zsh"));
+        assert_eq!(fallback_shell("linux", present).unwrap(), PathBuf::from("/bin/bash"));
+        assert!(fallback_shell("linux", missing).is_err());
+    }
+
+    #[cfg(unix)]
     #[test]
     fn echo_round_trip_and_binary_byte() {
         let host = PtyHost::new();
@@ -218,6 +249,7 @@ mod tests {
         let _ = fs::remove_dir_all(dir);
     }
 
+    #[cfg(unix)]
     #[test]
     fn second_open_fans_out_on_the_same_shell() {
         let host = PtyHost::new();
@@ -233,6 +265,7 @@ mod tests {
         let _ = fs::remove_dir_all(dir);
     }
 
+    #[cfg(unix)]
     #[test]
     fn close_is_idempotent_and_write_then_fails() {
         let host = PtyHost::new();
@@ -245,6 +278,7 @@ mod tests {
         let _ = fs::remove_dir_all(dir);
     }
 
+    #[cfg(unix)]
     #[test]
     fn shell_exit_removes_it_and_reports_the_code() {
         let host = PtyHost::new();
@@ -267,6 +301,7 @@ mod tests {
         let _ = fs::remove_dir_all(dir);
     }
 
+    #[cfg(unix)]
     #[test]
     fn missing_directory_leaves_no_shell() {
         let host = PtyHost::new();
@@ -278,6 +313,7 @@ mod tests {
         assert!(host.write("s", b"x").is_err());
     }
 
+    #[cfg(unix)]
     #[test]
     fn resize_rejects_zero() {
         let host = PtyHost::new();

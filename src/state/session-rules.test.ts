@@ -4,12 +4,13 @@ import { DEFAULT_TERMINAL_WIDTH } from "../terminal/rules";
 import { applyEvent, clearsAgentId, finishForLoad, hydrate, shouldNotify } from "./session-rules";
 import type { Session } from "./types";
 
-const session = (partial: Partial<Session>): Session => ({
+const session = (partial: Partial<Session> = {}): Session => ({
   id: "s1",
   agentSessionId: "agent-1",
   projectId: "p",
   label: "app",
   folder: "/work/app",
+  agent: "grok",
   model: "grok-4.7",
   turtle: "Leonardo",
   messages: [],
@@ -71,6 +72,68 @@ describe("session rules", () => {
     const invalid = hydrate({ ...missing, sidebarWidth: "wide", sidebarHidden: "yes", sessions: [] }).state;
     expect(invalid.sidebarWidth).toBe(DEFAULT_SIDEBAR_WIDTH);
     expect(invalid.sidebarHidden).toBe(false);
+  });
+
+  it("loads a session with no agent as grok", () => {
+    const saved = session();
+    const { agent: _agent, ...without } = saved;
+    const loaded = hydrate({
+      projects: [{ id: "p", name: "Personal" }],
+      activeProjectId: "p",
+      activeSessionId: "s1",
+      sessions: [without],
+    }).state;
+    expect(loaded.sessions[0].agent).toBe("grok");
+    expect(loaded.sessions[0].model).toBe("grok-4.7");
+    expect(loaded.selectedAgent).toBe("grok");
+  });
+
+  it("loads a gemini session as agy", () => {
+    const loaded = hydrate({
+      projects: [{ id: "p", name: "Personal" }],
+      activeProjectId: "p",
+      activeSessionId: "s1",
+      sessions: [session({ agent: "gemini" as Session["agent"], model: "gemini-2.5-pro" })],
+      selectedAgent: "gemini",
+    }).state;
+    expect(loaded.sessions[0].agent).toBe("agy");
+    expect(loaded.sessions[0].model).toBe("gemini-3.8-flash-high");
+    expect(loaded.selectedAgent).toBe("agy");
+  });
+
+  it("marks an open permission denied when the app loads", () => {
+    const loaded = finishForLoad(session({
+      messages: [{
+        id: "a",
+        role: "agent",
+        model: "grok-4.7",
+        blocks: [{ type: "permission", id: "p1", name: "Bash", input: { command: "ls" }, answered: null }],
+        done: false,
+        costUsd: null,
+        numTurns: null,
+      }],
+    }));
+    expect(loaded.messages[0]).toMatchObject({
+      done: true,
+      blocks: [{ type: "permission", answered: "deny" }],
+    });
+  });
+
+  it("sets the unread dot when a permission arrives off the visible session", () => {
+    const state = hydrate({
+      projects: [{ id: "p", name: "Personal" }],
+      activeProjectId: "p",
+      activeSessionId: "s1",
+      sessions: [session({ unread: false, messages: [] })],
+    }).state;
+    const hidden = applyEvent(state, { _session_id: "s1", kind: "permission", requestId: "p1", name: "Bash", input: { command: "ls" } }, "other", true);
+    expect(hidden.sessions[0].unread).toBe(true);
+    expect(hidden.sessions[0].messages[0]).toMatchObject({
+      role: "agent",
+      blocks: [{ type: "permission", name: "Bash" }],
+    });
+    const visible = applyEvent(state, { _session_id: "s1", kind: "permission", requestId: "p1", name: "Bash" }, "s1", true);
+    expect(visible.sessions[0].unread).toBe(false);
   });
 
   it("treats a bad saved shape as corrupt", () => {

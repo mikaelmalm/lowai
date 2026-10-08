@@ -1,6 +1,7 @@
 import { reduceBlocks } from "../chat/blocks";
 import { DEFAULT_SIDEBAR_WIDTH } from "../sidebar/rules";
 import { DEFAULT_TERMINAL_WIDTH } from "../terminal/rules";
+import { savedAgent, savedModel } from "./agents";
 import type { AgentEvent, AppState, ChatMessage, Session } from "./types";
 
 export function freshState(): AppState {
@@ -12,6 +13,7 @@ export function freshState(): AppState {
     sessions: [],
     sidebarWidth: DEFAULT_SIDEBAR_WIDTH,
     sidebarHidden: false,
+    selectedAgent: "grok",
   };
 }
 
@@ -20,9 +22,13 @@ export function finishForLoad(session: Session): Session {
     ...session,
     status: "asleep",
     unread: false,
-    messages: session.messages.map((message) =>
-      message.role === "agent" && !message.done ? { ...message, done: true } : message,
-    ),
+    messages: session.messages.map((message) => {
+      if (message.role !== "agent") return message;
+      const blocks = message.blocks.map((block) =>
+        block.type === "permission" && block.answered == null ? { ...block, answered: "deny" as const } : block,
+      );
+      return message.done && blocks === message.blocks ? message : { ...message, done: true, blocks };
+    }),
   };
 }
 
@@ -31,6 +37,8 @@ export function hydrate(raw: unknown): { state: AppState; corrupt: boolean } {
   const fallbackWidth = savedWidth((raw as { terminalWidth?: unknown }).terminalWidth);
   const sessions = raw.sessions.map((session) => finishForLoad({
     ...session,
+    agent: savedAgent(session.agent),
+    model: savedModel(savedAgent(session.agent), session.model),
     terminalWidth: savedWidth(session.terminalWidth, fallbackWidth),
   }));
   const activeProjectId = raw.projects.some((project) => project.id === raw.activeProjectId)
@@ -48,6 +56,7 @@ export function hydrate(raw: unknown): { state: AppState; corrupt: boolean } {
       sessions,
       sidebarWidth: savedWidth((raw as { sidebarWidth?: unknown }).sidebarWidth, DEFAULT_SIDEBAR_WIDTH),
       sidebarHidden: raw.sidebarHidden === true,
+      selectedAgent: savedAgent((raw as { selectedAgent?: unknown }).selectedAgent),
     },
   };
 }
@@ -69,7 +78,10 @@ export function applyEvent(state: AppState, event: AgentEvent, viewingSessionId:
   if (index === -1) return state;
   const session = state.sessions[index];
   let next = session;
-  if (event.kind === "text_delta" || event.kind === "tool_start" || event.kind === "tool_done") {
+  if (event.kind === "permission") {
+    next = ensureOpenAgent(session, (message) => ({ ...message, blocks: reduceBlocks(message.blocks, event) }));
+    if (viewingSessionId !== session.id) next = { ...next, unread: true };
+  } else if (event.kind === "text_delta" || event.kind === "tool_start" || event.kind === "tool_done") {
     next = updateOpenAgent(session, (message) => ({ ...message, blocks: reduceBlocks(message.blocks, event) }));
   } else if (event.kind === "turn_done") {
     const viewing = viewingSessionId === session.id && windowFocused;
@@ -95,6 +107,21 @@ export function applyEvent(state: AppState, event: AgentEvent, viewingSessionId:
   const sessions = state.sessions.slice();
   sessions[index] = next;
   return { ...state, sessions };
+}
+
+function ensureOpenAgent(session: Session, edit: (message: Extract<ChatMessage, { role: "agent" }>) => Extract<ChatMessage, { role: "agent" }>): Session {
+  const updated = updateOpenAgent(session, edit);
+  if (updated !== session) return updated;
+  const opened: Extract<ChatMessage, { role: "agent" }> = {
+    id: `agent-${session.messages.length}`,
+    role: "agent",
+    model: session.model,
+    blocks: [],
+    done: false,
+    costUsd: null,
+    numTurns: null,
+  };
+  return updateOpenAgent({ ...session, messages: [...session.messages, opened] }, edit);
 }
 
 function updateOpenAgent(session: Session, edit: (message: Extract<ChatMessage, { role: "agent" }>) => Extract<ChatMessage, { role: "agent" }>): Session {

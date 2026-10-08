@@ -18,22 +18,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ai-shell"
-version = "0.1.0"
-dependencies = [
- "ai-shell-core",
- "portable-pty",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-notification",
- "tauri-plugin-opener",
- "tokio",
-]
-
-[[package]]
 name = "ai-shell-core"
 version = "0.1.0"
 dependencies = [
@@ -2032,6 +2016,22 @@ name = "log"
 version = "0.4.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
+
+[[package]]
+name = "lowai"
+version = "0.1.0"
+dependencies = [
+ "ai-shell-core",
+ "portable-pty",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-notification",
+ "tauri-plugin-opener",
+ "tokio",
+]
 
 [[package]]
 name = "mac-notification-sys"

@@ -6,6 +6,8 @@ fn main() {
                 "send_message",
                 "set_model",
                 "close_session",
+                "available_agents",
+                "answer_permission",
                 "load_app_state",
                 "save_app_state",
                 "quarantine_app_state",

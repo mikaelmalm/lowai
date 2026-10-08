@@ -1,8 +1,8 @@
 [package]
-name = "ai-shell"
+name = "lowai"
 version = "0.1.0"
 edition = "2021"
-description = "Side-by-side headless Grok sessions"
+description = "Side-by-side headless agent sessions"
 
 [lib]
 name = "ai_shell_lib"

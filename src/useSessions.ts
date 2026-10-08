@@ -7,6 +7,8 @@ import { useEffect, useRef, useState } from "react";
 import { playTone } from "./lib/sound";
 import { DEFAULT_TERMINAL_WIDTH } from "./terminal/rules";
 import { openSubscription } from "./lib/subscribe";
+import { answerBlock } from "./chat/blocks";
+import { defaultModel, selectedFrom, type AgentId } from "./state/agents";
 import { applyEvent, clearsAgentId, freshState, hydrate, shouldNotify } from "./state/session-rules";
 import type { AgentEvent, AppState, ChatMessage, Session } from "./state/types";
 import { assignTurtle } from "./theme/turtles";
@@ -15,6 +17,7 @@ type CommandFailure = { status?: string; message?: string };
 
 export function useSessions() {
   const [state, setState] = useState<AppState>(freshState);
+  const [agents, setAgents] = useState<string[]>([]);
   const [banner, setBanner] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const stateRef = useRef(state);
@@ -22,7 +25,10 @@ export function useSessions() {
   const starts = useRef(new Map<string, Promise<string>>());
   const chains = useRef(new Map<string, Promise<unknown>>());
   const closed = useRef(new Set<string>());
+  const agentsRef = useRef<string[]>([]);
+  const decisions = useRef(new Set<string>());
   stateRef.current = state;
+  agentsRef.current = agents;
 
   useEffect(() => {
     return openSubscription(() =>
@@ -50,6 +56,9 @@ export function useSessions() {
 
   useEffect(() => {
     void invoke<LoadResponse>("load_app_state").then(async (response) => {
+      const found = await invoke<string[]>("available_agents").catch(() => [] as string[]);
+      agentsRef.current = found;
+      setAgents(found);
       if (response.status === "ok") {
         let parsed: unknown;
         try {
@@ -61,14 +70,20 @@ export function useSessions() {
         if (hydrated.corrupt) {
           setBanner("Saved state was unreadable and was set aside.");
           await invoke("quarantine_app_state");
+        } else if (found.length === 0 && hydrated.state.sessions.length > 0) {
+          setBanner("No agent CLI was found.");
         }
-        stateRef.current = hydrated.state;
-        setState(hydrated.state);
+        const selected = selectedFrom(hydrated.state.selectedAgent, found);
+        const next = { ...hydrated.state, selectedAgent: (selected || "grok") as AgentId };
+        stateRef.current = next;
+        setState(next);
       } else if (response.status === "corrupt") {
         setBanner(`Saved state was set aside at ${response.backup}.`);
       } else if (response.status === "ioError") {
         saveDisabled.current = true;
         setBanner(`Could not read saved state (${response.message}). Changes will not be saved this run.`);
+      } else if (found.length === 0 && stateRef.current.sessions.length > 0) {
+        setBanner("No agent CLI was found.");
       }
       setReady(true);
     }).catch((error: unknown) => {
@@ -99,6 +114,11 @@ export function useSessions() {
   }
 
   function addSession(folder: string) {
+    const agent = stateRef.current.selectedAgent;
+    if (!agentsRef.current.includes(agent)) {
+      setBanner("No agent CLI was found.");
+      return;
+    }
     const projectId = stateRef.current.activeProjectId;
     const used = stateRef.current.sessions.filter((session) => session.projectId === projectId).map((session) => session.turtle);
     const turtle = assignTurtle(used);
@@ -108,7 +128,8 @@ export function useSessions() {
       projectId,
       label: folder.split(/[/\\]/).filter(Boolean).pop() || folder,
       folder,
-      model: "grok-4.7",
+      agent,
+      model: defaultModel(agent),
       turtle: turtle.name,
       messages: [],
       unread: false,
@@ -124,26 +145,28 @@ export function useSessions() {
   }
 
   async function ensureRunning(session: Session): Promise<string> {
-    if (session.status === "running" && session.agentSessionId) return session.agentSessionId;
+    if (session.status === "running") return session.agentSessionId ?? "";
     const existing = starts.current.get(session.id);
     if (existing) return existing;
     const task = invoke<string>("start_session", {
       sessionId: session.id,
       cwd: session.folder,
       model: session.model,
+      agent: session.agent,
       agentSessionId: session.agentSessionId,
     }).then((agentSessionId) => {
       if (closed.current.has(session.id)) {
         void invoke("close_session", { sessionId: session.id });
         throw new Error("closed");
       }
+      const stored = agentSessionId || null;
       patch((current) => ({
         ...current,
         sessions: current.sessions.map((item) =>
-          item.id === session.id ? { ...item, agentSessionId, status: "running" } : item,
+          item.id === session.id ? { ...item, agentSessionId: stored, status: "running" } : item,
         ),
       }));
-      return agentSessionId;
+      return stored ?? "";
     }).finally(() => {
       starts.current.delete(session.id);
     });
@@ -163,74 +186,113 @@ export function useSessions() {
     if (!session) return {};
     try {
       await ensureRunning(session);
-      await invoke("send_message", { sessionId, text });
-      const user: ChatMessage = { id: crypto.randomUUID(), role: "user", text };
-      const agent: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: "agent",
-        model: session.model,
-        blocks: [],
-        done: false,
-        costUsd: null,
-        numTurns: null,
-      };
-      patch((current) => ({
-        ...current,
-        sessions: current.sessions.map((item) =>
-          item.id === sessionId ? { ...item, messages: [...item.messages, user, agent] } : item,
-        ),
-      }));
-      return {};
     } catch (error) {
-      const info = commandFailure(error);
-      if (info.status === "missingSession") {
+      return failSend(sessionId, text, error, null, null);
+    }
+    const user: ChatMessage = { id: crypto.randomUUID(), role: "user", text };
+    const agent: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: "agent",
+      model: session.model,
+      blocks: [],
+      done: false,
+      costUsd: null,
+      numTurns: null,
+    };
+    patch((current) => ({
+      ...current,
+      sessions: current.sessions.map((item) =>
+        item.id === sessionId ? { ...item, messages: [...item.messages, user, agent] } : item,
+      ),
+    }));
+    try {
+      const learned = await invoke<string | null>("send_message", { sessionId, text });
+      if (learned) {
         patch((current) => ({
           ...current,
           sessions: current.sessions.map((item) =>
-            item.id === sessionId && clearsAgentId("missing")
-              ? {
-                  ...item,
-                  agentSessionId: null,
-                  status: "asleep",
-                  messages: [...item.messages, { id: crypto.randomUUID(), role: "system", text: "Couldn't resume — your next message starts a fresh conversation." }],
-                }
-              : item,
-          ),
-        }));
-      } else if (info.status !== "closed") {
-        patch((current) => ({
-          ...current,
-          sessions: current.sessions.map((item) =>
-            item.id === sessionId
-              ? { ...item, messages: [...item.messages, { id: crypto.randomUUID(), role: "system", text: info.message }] }
-              : item,
+            item.id === sessionId ? { ...item, agentSessionId: learned } : item,
           ),
         }));
       }
-      return { restore: text };
+      return {};
+    } catch (error) {
+      return failSend(sessionId, text, error, user.id, agent.id);
     }
+  }
+
+  function failSend(sessionId: string, text: string, error: unknown, userId: string | null, agentId: string | null): { restore?: string } {
+    const info = commandFailure(error);
+    patch((current) => ({
+      ...current,
+      sessions: current.sessions.map((item) => {
+        if (item.id !== sessionId) return item;
+        const agentMessage = agentId ? item.messages.find((message) => message.id === agentId) : undefined;
+        const keepTurn = agentMessage?.role === "agent" && agentMessage.blocks.length > 0;
+        const messages = keepTurn || !userId
+          ? item.messages
+          : item.messages.filter((message) => message.id !== userId && message.id !== agentId);
+        const missing = info.status === "missingSession" && clearsAgentId("missing");
+        const note = missing
+          ? "Couldn't resume — your next message starts a fresh conversation."
+          : info.status === "closed" ? "" : info.message;
+        return {
+          ...item,
+          agentSessionId: missing ? null : item.agentSessionId,
+          status: "asleep",
+          messages: note ? [...messages, { id: crypto.randomUUID(), role: "system" as const, text: note }] : messages,
+        };
+      }),
+    }));
+    return info.status === "closed" ? {} : { restore: text };
   }
 
   async function changeModel(sessionId: string, model: string) {
     const session = stateRef.current.sessions.find((item) => item.id === sessionId);
+    if (!session || session.model === model) return;
+    const previous = session.model;
     patch((current) => ({
       ...current,
       sessions: current.sessions.map((item) => (item.id === sessionId ? { ...item, model } : item)),
     }));
-    if (session?.status === "running") {
-      try {
-        await invoke("set_model", { sessionId, model });
-      } catch (error) {
-        patch((current) => ({
-          ...current,
-          sessions: current.sessions.map((item) =>
-            item.id === sessionId
-              ? { ...item, messages: [...item.messages, { id: crypto.randomUUID(), role: "system", text: messageOf(error) }] }
-              : item,
-          ),
-        }));
-      }
+    if (session.status !== "running") return;
+    try {
+      await invoke("set_model", { sessionId, model });
+    } catch (error) {
+      patch((current) => ({
+        ...current,
+        sessions: current.sessions.map((item) =>
+          item.id === sessionId
+            ? {
+                ...item,
+                model: previous,
+                messages: [...item.messages, { id: crypto.randomUUID(), role: "system", text: messageOf(error) }],
+              }
+            : item,
+        ),
+      }));
     }
+  }
+
+  function answerPermission(sessionId: string, requestId: string, allow: boolean) {
+    const key = `${sessionId}:${requestId}`;
+    if (decisions.current.has(key)) return;
+    decisions.current.add(key);
+    patch((current) => ({
+      ...current,
+      sessions: current.sessions.map((item) => {
+        if (item.id !== sessionId) return item;
+        return {
+          ...item,
+          messages: item.messages.map((message) =>
+            message.role === "agent"
+              ? { ...message, blocks: answerBlock(message.blocks, requestId, allow) }
+              : message,
+          ),
+        };
+      }),
+    }));
+    void invoke("answer_permission", { sessionId, requestId, allow });
   }
 
   async function closeSession(sessionId: string) {
@@ -247,6 +309,7 @@ export function useSessions() {
 
   return {
     state,
+    agents,
     banner,
     ready,
     dismissBanner: () => setBanner(null),
@@ -283,6 +346,8 @@ export function useSessions() {
       sessions: current.sessions.map((session) => (session.id === id ? { ...session, label } : session)),
     })),
     addSession,
+    setAgent: (agent: AgentId) => patch((current) => ({ ...current, selectedAgent: agent })),
+    answerPermission,
     browse,
     closeSession,
     setTerminalWidth: (sessionId: string, width: number) => patch((current) => ({
