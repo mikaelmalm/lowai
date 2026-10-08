@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { playTone } from "./lib/sound";
 import { openSubscription } from "./lib/subscribe";
 import { answerBlock } from "./chat/blocks";
-import { defaultModel, selectedFrom, type AgentId } from "./state/agents";
+import { defaultModel, installedAgent, type AgentId } from "./state/agents";
 import { applyEvent, clearsAgentId, freshState, hydrate, shouldNotify, withFolder } from "./state/session-rules";
 import type { AgentEvent, AppState, ChatMessage, Session } from "./state/types";
 import { shellCd, DEFAULT_TERMINAL_WIDTH } from "./terminal/rules";
@@ -73,10 +73,7 @@ export function useSessions() {
         } else if (found.length === 0 && hydrated.state.sessions.length > 0) {
           setBanner("No agent CLI was found.");
         }
-        const selected = selectedFrom(hydrated.state.selectedAgent, found);
-        const next = { ...hydrated.state, selectedAgent: (selected || "grok") as AgentId };
-        stateRef.current = next;
-        setState(next);
+        stateRef.current = hydrated.state;
       } else if (response.status === "corrupt") {
         setBanner(`Saved state was set aside at ${response.backup}.`);
       } else if (response.status === "ioError") {
@@ -85,6 +82,11 @@ export function useSessions() {
       } else if (found.length === 0 && stateRef.current.sessions.length > 0) {
         setBanner("No agent CLI was found.");
       }
+      const selected = installedAgent(stateRef.current.selectedAgent, found);
+      if (selected && selected !== stateRef.current.selectedAgent) {
+        stateRef.current = { ...stateRef.current, selectedAgent: selected };
+      }
+      setState(stateRef.current);
       setReady(true);
     }).catch((error: unknown) => {
       setBanner(messageOf(error));
@@ -114,8 +116,8 @@ export function useSessions() {
   }
 
   function addSession(folder: string) {
-    const agent = stateRef.current.selectedAgent;
-    if (!agentsRef.current.includes(agent)) {
+    const agent = installedAgent(stateRef.current.selectedAgent, agentsRef.current);
+    if (!agent) {
       setBanner("No agent CLI was found.");
       return;
     }
@@ -136,7 +138,13 @@ export function useSessions() {
       status: "asleep",
       terminalWidth: DEFAULT_TERMINAL_WIDTH,
     };
-    patch((current) => ({ ...current, activeSessionId: session.id, sessions: [...current.sessions, session] }));
+    patch((current) => ({
+      ...current,
+      selectedAgent: agent,
+      activeSessionId: session.id,
+      sessions: [...current.sessions, session],
+    }));
+    setBanner((current) => (current === "No agent CLI was found." ? null : current));
   }
 
   async function browse() {

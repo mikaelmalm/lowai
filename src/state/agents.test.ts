@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultModel, modelsFor, selectedFrom } from "./agents";
+import { defaultModel, installedAgent, modelsFor, selectedFrom } from "./agents";
 
 describe("agents", () => {
   it("lists only the models for that agent", () => {
@@ -13,6 +13,10 @@ describe("agents", () => {
   it("keeps a saved agent that is installed and otherwise picks the first", () => {
     expect(selectedFrom("agy", ["grok", "agy"])).toBe("agy");
     expect(selectedFrom("claude", ["grok", "agy"])).toBe("grok");
+    expect(selectedFrom("grok", ["claude"])).toBe("claude");
     expect(selectedFrom("grok", [])).toBe("");
+    expect(installedAgent("grok", ["claude"])).toBe("claude");
+    expect(installedAgent("agy", ["grok", "agy"])).toBe("agy");
+    expect(installedAgent("grok", [])).toBe("");
   });
 });

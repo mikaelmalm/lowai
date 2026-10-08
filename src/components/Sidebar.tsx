@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from "react";
-import type { AgentId } from "../state/agents";
+import { installedAgent, type AgentId } from "../state/agents";
 import type { AppState } from "../state/types";
 import { canDeleteProject } from "../state/projects";
 import { TURTLES } from "../theme/turtles";
@@ -26,6 +26,7 @@ export function Sidebar(props: Props) {
   const [editingProject, setEditingProject] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const sessionCount = sessions.length;
+  const selectedAgent = installedAgent(props.state.selectedAgent, props.agents);
   return (
     <aside className="sidebar" style={props.style}>
       <div className="project-switcher">
@@ -96,7 +97,7 @@ export function Sidebar(props: Props) {
           Agent
           <select
             aria-label="Agent"
-            value={props.agents.includes(props.state.selectedAgent) ? props.state.selectedAgent : ""}
+            value={selectedAgent}
             onChange={(event) => props.onAgent(event.target.value as AgentId)}
           >
             {props.agents.map((agent) => (

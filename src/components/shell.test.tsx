@@ -47,6 +47,7 @@ describe("sidebar", () => {
     expect(html).toContain("session-tag");
     expect(html).toContain("sonnet");
     expect(html).toContain("New session");
+    expect(html).toContain('<option value="claude" selected="">claude</option>');
     expect(html).toContain("Browse");
     expect(html).toContain("Light mode");
     const nameAt = html.indexOf("session-name");

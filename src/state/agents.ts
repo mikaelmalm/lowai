@@ -48,3 +48,9 @@ export function selectedFrom(saved: string, available: readonly string[]): strin
   if (available.includes(saved)) return saved;
   return available[0] ?? "";
 }
+
+/** Saved agent when that CLI is installed, otherwise the first installed one. */
+export function installedAgent(selected: string, available: readonly string[]): AgentId | "" {
+  const picked = selectedFrom(selected, available);
+  return isAgent(picked) ? picked : "";
+}
