@@ -13,7 +13,7 @@ function load(): Promise<typeof mermaid> {
       securityLevel: "strict",
       suppressErrorRendering: true,
       theme: "dark",
-      fontFamily: '"Segoe UI", sans-serif',
+      fontFamily: '"Inter Variable", sans-serif',
       themeVariables: {
         darkMode: true,
         background: "#1b2128",

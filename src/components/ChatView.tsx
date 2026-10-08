@@ -25,6 +25,7 @@ export function ChatView({ session, onSend, onModel, onLink, onPermission, onTer
   const [busy, setBusy] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
+  const field = useRef<HTMLTextAreaElement>(null);
   const stick = useRef(true);
   function onScroll() {
     const el = scroller.current;
@@ -47,6 +48,17 @@ export function ChatView({ session, onSend, onModel, onLink, onPermission, onTer
     if (!el || !stick.current) return;
     el.scrollTop = el.scrollHeight;
   }, [session.messages]);
+  useLayoutEffect(() => {
+    const el = field.current;
+    if (!el) return;
+    const max = 176;
+    el.style.maxHeight = "none";
+    el.style.height = "auto";
+    const full = el.scrollHeight;
+    el.style.maxHeight = "";
+    el.style.height = `${Math.min(full, max)}px`;
+    el.style.overflowY = full > max ? "auto" : "hidden";
+  }, [draft]);
   const turtle = TURTLES.find((item) => item.name === session.turtle) ?? TURTLES[0];
   const ink = readableOn(turtle.color);
   const models = modelsFor(session.agent);
@@ -54,38 +66,39 @@ export function ChatView({ session, onSend, onModel, onLink, onPermission, onTer
   return (
     <section className="chat" style={{ ["--turtle" as string]: turtle.color }}>
       <header className="chat-header">
+        <div className="header-slot">
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="Sidebar"
+            aria-pressed={sidebarOpen}
+            title={sidebarModifier(navigator.platform) === "meta" ? "Sidebar (⌘B)" : "Sidebar (Ctrl+B)"}
+            onClick={onSidebar}
+          >
+            <SidebarIcon />
+          </button>
+        </div>
         <div className="chat-title">
           <strong>{session.label}</strong>
           <span title={session.folder}>{session.folder}</span>
         </div>
-        <button
-          type="button"
-          className="control icon-button"
-          aria-label="Sidebar"
-          aria-pressed={sidebarOpen}
-          title={sidebarModifier(navigator.platform) === "meta" ? "Sidebar (⌘B)" : "Sidebar (Ctrl+B)"}
-          onClick={onSidebar}
-        >
-          <SidebarIcon />
-        </button>
-        <button
-          type="button"
-          className="control icon-button"
-          aria-label="Terminal"
-          aria-pressed={terminalOpen}
-          title="Terminal (Ctrl+`)"
-          onClick={onTerminal}
-        >
-          <TerminalIcon />
-        </button>
-        <label>
-          Model
-          <select value={session.model} onChange={(event) => onModel(event.target.value)}>
+        <div className="header-slot end">
+          <select aria-label="Model" value={session.model} onChange={(event) => onModel(event.target.value)}>
             {modelOptions.map((model) => (
               <option key={model} value={model}>{model}</option>
             ))}
           </select>
-        </label>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="Terminal"
+            aria-pressed={terminalOpen}
+            title="Terminal (Ctrl+`)"
+            onClick={onTerminal}
+          >
+            <TerminalIcon />
+          </button>
+        </div>
       </header>
       <div className="transcript" ref={scroller} onScroll={onScroll}>
         <div className="transcript-body" ref={body}>
@@ -119,10 +132,11 @@ export function ChatView({ session, onSend, onModel, onLink, onPermission, onTer
         }}
       >
         <textarea
+          ref={field}
           aria-label={`Message ${turtle.name}`}
           value={draft}
-          placeholder={`Message ${turtle.name}`}
-          rows={3}
+          placeholder={`Message ${turtle.name}…`}
+          rows={1}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {

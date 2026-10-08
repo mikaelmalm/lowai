@@ -100,7 +100,6 @@ export function App() {
           style={{ width: sidebarWidth }}
         state={api.state}
         onProject={api.selectProject}
-        onCreateProject={api.createProject}
         onRenameProject={api.renameProject}
         onDeleteProject={api.deleteProject}
         onSelect={api.selectSession}
@@ -117,7 +116,6 @@ export function App() {
         onAgent={api.setAgent}
         onNewSession={() => api.addSession(session?.folder || ".")}
         onBrowse={() => { void api.browse(); }}
-        onTypedFolder={api.addSession}
         />
       )}
       {api.state.sidebarHidden ? null : (
