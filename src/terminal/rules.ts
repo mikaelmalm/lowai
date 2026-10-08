@@ -28,6 +28,11 @@ export function afterExit(): { alive: false; exited: true } {
   return { alive: false, exited: true };
 }
 
+export function shellCd(folder: string, platform: string): string {
+  if (/win/i.test(platform)) return `Set-Location -LiteralPath '${folder.split("'").join("''")}'\r`;
+  return `cd -- '${folder.split("'").join(`'\\''`)}'\n`;
+}
+
 export function routeBytes(ownerId: string, sessionId: string, chunk: Uint8Array): Uint8Array | null {
   return ownerId === sessionId ? chunk : null;
 }

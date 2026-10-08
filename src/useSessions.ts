@@ -5,12 +5,12 @@ import { isPermissionGranted, requestPermission, sendNotification } from "@tauri
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useEffect, useRef, useState } from "react";
 import { playTone } from "./lib/sound";
-import { DEFAULT_TERMINAL_WIDTH } from "./terminal/rules";
 import { openSubscription } from "./lib/subscribe";
 import { answerBlock } from "./chat/blocks";
 import { defaultModel, selectedFrom, type AgentId } from "./state/agents";
-import { applyEvent, clearsAgentId, freshState, hydrate, shouldNotify } from "./state/session-rules";
+import { applyEvent, clearsAgentId, freshState, hydrate, shouldNotify, withFolder } from "./state/session-rules";
 import type { AgentEvent, AppState, ChatMessage, Session } from "./state/types";
+import { shellCd, DEFAULT_TERMINAL_WIDTH } from "./terminal/rules";
 import { assignTurtle } from "./theme/turtles";
 
 type CommandFailure = { status?: string; message?: string };
@@ -141,7 +141,20 @@ export function useSessions() {
 
   async function browse() {
     const picked = await open({ directory: true, multiple: false, defaultPath: currentFolder() });
-    if (typeof picked === "string") addSession(picked);
+    if (typeof picked !== "string") return;
+    const current = stateRef.current;
+    const active = current.sessions.find((session) => session.id === current.activeSessionId && session.projectId === current.activeProjectId);
+    if (!active) {
+      addSession(picked);
+      return;
+    }
+    if (active.folder === picked) return;
+    patch((state) => ({
+      ...state,
+      sessions: state.sessions.map((session) => (session.id === active.id ? withFolder(session, picked) : session)),
+    }));
+    const bytes = Array.from(new TextEncoder().encode(shellCd(picked, navigator.platform)));
+    void invoke("write_terminal", { sessionId: active.id, data: bytes }).catch(() => undefined);
   }
 
   async function ensureRunning(session: Session): Promise<string> {
@@ -198,6 +211,7 @@ export function useSessions() {
       done: false,
       costUsd: null,
       numTurns: null,
+      openedAt: Date.now(),
     };
     patch((current) => ({
       ...current,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { afterExit, afterHide, afterKill, clampTerminalWidth, DEFAULT_TERMINAL_WIDTH, openAction, routeBytes } from "./rules";
+import { afterExit, afterHide, afterKill, clampTerminalWidth, DEFAULT_TERMINAL_WIDTH, openAction, routeBytes, shellCd } from "./rules";
 
 describe("terminal rules", () => {
   it("spawns when no shell is alive and shows a live one", () => {
@@ -21,6 +21,12 @@ describe("terminal rules", () => {
   it("hides without killing and kill requests a close", () => {
     expect(afterHide(true)).toEqual({ visible: false, alive: true });
     expect(afterKill()).toEqual({ visible: false, alive: false, close: true });
+  });
+
+  it("quotes a directory change for the shell", () => {
+    expect(shellCd("/work/my app", "linux")).toBe(`cd -- '/work/my app'\n`);
+    expect(shellCd("/tmp/a'b", "linux")).toBe(`cd -- '/tmp/a'\\''b'\n`);
+    expect(shellCd("C:\\work\\app", "Win32")).toBe(`Set-Location -LiteralPath 'C:\\work\\app'\r`);
   });
 
   it("clamps the pane between the chat and the terminal minimums", () => {

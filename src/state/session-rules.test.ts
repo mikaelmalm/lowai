@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SIDEBAR_WIDTH } from "../sidebar/rules";
 import { DEFAULT_TERMINAL_WIDTH } from "../terminal/rules";
-import { applyEvent, clearsAgentId, finishForLoad, hydrate, shouldNotify } from "./session-rules";
+import { applyEvent, clearsAgentId, finishForLoad, folderName, hydrate, shouldNotify, withFolder } from "./session-rules";
 import type { Session } from "./types";
 
 const session = (partial: Partial<Session> = {}): Session => ({
@@ -141,10 +141,36 @@ describe("session rules", () => {
     expect(hydrate(null).corrupt).toBe(true);
   });
 
+  it("moves a session to a new folder and renames it when the name is still the folder", () => {
+    expect(folderName("/work/app")).toBe("app");
+    const moved = withFolder(session({ label: "app", folder: "/work/app" }), "/work/other");
+    expect(moved.folder).toBe("/work/other");
+    expect(moved.label).toBe("other");
+    const named = withFolder(session({ label: "Desk", folder: "/work/app" }), "/work/other");
+    expect(named.label).toBe("Desk");
+    expect(named.folder).toBe("/work/other");
+  });
+
   it("notifies unless the window is focused on that session", () => {
     expect(shouldNotify(true, true)).toBe(false);
     expect(shouldNotify(true, false)).toBe(true);
     expect(shouldNotify(false, true)).toBe(true);
+  });
+
+  it("stamps a reply when it opens and keeps that time", () => {
+    const state = hydrate({
+      projects: [{ id: "p", name: "Personal" }],
+      activeProjectId: "p",
+      activeSessionId: "s1",
+      sessions: [session({ unread: false, messages: [] })],
+    }).state;
+    const opened = applyEvent(state, { _session_id: "s1", kind: "permission", requestId: "p1", name: "Bash" }, "s1", true);
+    const first = opened.sessions[0].messages[0];
+    expect(first.role).toBe("agent");
+    if (first.role !== "agent") return;
+    expect(first.openedAt).toEqual(expect.any(Number));
+    const later = applyEvent(opened, { _session_id: "s1", kind: "tool_done", toolId: "p1" }, "s1", true);
+    expect(later.sessions[0].messages[0]).toMatchObject({ openedAt: first.openedAt });
   });
 
   it("appends a session-ended card and goes to sleep", () => {

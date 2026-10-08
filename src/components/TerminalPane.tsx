@@ -52,6 +52,7 @@ export function TerminalPane({ sessionId, folder, width, hidden, focusToken, onH
       const bytes = message instanceof Uint8Array ? message : Uint8Array.from(message);
       term.write(bytes);
     };
+    // A later folder change is a cd into the live shell, not a new pty.
     void invoke("open_terminal", { sessionId, cwd: folder, channel }).then(() => {
       if (disposed) return;
       fit.fit();
@@ -80,7 +81,7 @@ export function TerminalPane({ sessionId, folder, width, hidden, focusToken, onH
       termRef.current = null;
       fitRef.current = null;
     };
-  }, [sessionId, folder, attempt]);
+  }, [sessionId, attempt]);
 
   useEffect(() => {
     if (hidden) return;
@@ -100,13 +101,13 @@ export function TerminalPane({ sessionId, folder, width, hidden, focusToken, onH
     <section className={hidden ? "terminal-column hidden" : "terminal-column"} style={hidden ? undefined : { width }}>
       <header>
         <strong>Terminal</strong>
-        <button type="button" onClick={onHide}>Hide</button>
-        <button type="button" onClick={onKill}>Kill</button>
+        <button type="button" className="control" onClick={onHide}>Hide</button>
+        <button type="button" className="control" onClick={onKill}>Kill</button>
       </header>
       {error ? (
         <div className="terminal-error">
           <p>{error}</p>
-          <button type="button" onClick={() => setAttempt((value) => value + 1)}>Retry</button>
+          <button type="button" className="control" onClick={() => setAttempt((value) => value + 1)}>Retry</button>
         </div>
       ) : null}
       <div ref={hostRef} className="terminal-host" />

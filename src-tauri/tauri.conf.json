@@ -17,8 +17,7 @@
         "title": "lowai",
         "width": 1200,
         "height": 800,
-        "titleBarStyle": "Transparent",
-        "hiddenTitle": true,
+        "decorations": false,
         "backgroundColor": "#1f2328"
       }
     ],

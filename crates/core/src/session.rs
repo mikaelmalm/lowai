@@ -879,6 +879,7 @@ fn prepare_cli(bin: &crate::platform::CliBin, cwd: &Path, args: &[String]) -> Co
 }
 
 pub struct LaunchPlan {
+    #[cfg_attr(not(test), allow(dead_code))]
     pub command: &'static str,
     pub args: Vec<String>,
     pub cwd: PathBuf,

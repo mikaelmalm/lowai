@@ -1,8 +1,9 @@
-import "highlight.js/styles/github.css";
+import "highlight.js/styles/github-dark.css";
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { ChatView } from "./components/ChatView";
 import { Sidebar } from "./components/Sidebar";
+import { TitleBar } from "./components/TitleBar";
 import { TerminalPane } from "./components/TerminalPane";
 import { useSessions } from "./useSessions";
 import { clampSidebarWidth, sidebarModifier, sidebarShortcut } from "./sidebar/rules";
@@ -91,6 +92,8 @@ export function App() {
   const sidebarWidth = clampSidebarWidth(api.state.sidebarWidth, windowWidth, paneVisible ? width : 0);
 
   return (
+    <div className="window">
+    <TitleBar />
     <div className="app" ref={appRef}>
       {api.state.sidebarHidden ? null : (
         <Sidebar
@@ -142,7 +145,7 @@ export function App() {
         {api.banner ? (
           <div className="banner">
             <span>{api.banner}</span>
-            <button type="button" onClick={api.dismissBanner}>Dismiss</button>
+            <button type="button" className="control" onClick={api.dismissBanner}>Dismiss</button>
           </div>
         ) : null}
         {session ? (
@@ -155,8 +158,10 @@ export function App() {
                 onModel={(model) => { void api.changeModel(session.id, model); }}
                 onLink={api.openLink}
                 onPermission={(requestId, allow) => api.answerPermission(session.id, requestId, allow)}
-                onTerminal={() => openTerminal(session.id)}
+                onTerminal={() => (paneVisible ? hideTerminal(session.id) : openTerminal(session.id))}
                 onSidebar={api.toggleSidebar}
+                sidebarOpen={!api.state.sidebarHidden}
+                terminalOpen={paneVisible}
               />
             </div>
             {paneVisible ? (
@@ -199,7 +204,9 @@ export function App() {
           </div>
         ) : (
           <section className="empty">
-            <button type="button" onClick={api.toggleSidebar}>Sidebar</button>
+            {api.state.sidebarHidden ? (
+              <button type="button" className="control" onClick={api.toggleSidebar}>Show sidebar</button>
+            ) : null}
             <h1>lowai</h1>
             {api.ready && api.agents.length === 0 ? (
               <p className="system-card">No agent CLI was found.</p>
@@ -209,6 +216,7 @@ export function App() {
           </section>
         )}
       </main>
+    </div>
     </div>
   );
 }

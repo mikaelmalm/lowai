@@ -44,16 +44,16 @@ export function Sidebar(props: Props) {
             }}
           />
         ) : (
-          <button type="button" className="project-name" onDoubleClick={() => setEditingProject(true)} onClick={(event) => {
+          <button type="button" className="project-name" title="Double-click to rename" onDoubleClick={() => setEditingProject(true)} onClick={(event) => {
             const menu = event.currentTarget.nextElementSibling;
             menu?.classList.toggle("open");
           }}>
-            📁 {project.name} ▾
+            {project.name} ▾
           </button>
         )}
         <div className="project-menu">
           {props.state.projects.map((item) => (
-            <button type="button" key={item.id} onClick={() => props.onProject(item.id)}>{item.name}</button>
+            <button type="button" key={item.id} className={item.id === project.id ? "active" : undefined} onClick={() => props.onProject(item.id)}>{item.name}</button>
           ))}
         </div>
         {creating ? (
@@ -72,11 +72,44 @@ export function Sidebar(props: Props) {
             }}
           />
         ) : (
-          <button type="button" onClick={() => setCreating(true)}>➕ New project…</button>
+          <button type="button" onClick={() => setCreating(true)}>New project…</button>
         )}
         {canDeleteProject(props.state.projects, project.id, sessionCount) ? (
           <button type="button" onClick={() => props.onDeleteProject(project.id)}>Delete</button>
         ) : null}
+      </div>
+      <div className="session-scroll">
+        {sessions.length === 0 ? <p className="session-empty">No sessions yet.</p> : (
+          <ul className="session-list">
+            {sessions.map((session) => {
+              const turtle = TURTLES.find((item) => item.name === session.turtle) ?? TURTLES[0];
+              const active = session.id === props.state.activeSessionId;
+              return (
+                <li key={session.id} className={active ? "active" : ""}>
+                  <button type="button" className="session-row" title="Double-click to rename" onClick={() => props.onSelect(session.id)} onDoubleClick={() => setEditingId(session.id)}>
+                    <span className="mask" style={{ background: turtle.color }} />
+                    {editingId === session.id ? (
+                      <input
+                        autoFocus
+                        defaultValue={session.label}
+                        onClick={(event) => event.stopPropagation()}
+                        onBlur={(event) => { props.onRename(session.id, event.target.value.trim() || session.label); setEditingId(null); }}
+                        onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }}
+                      />
+                    ) : (
+                      <span className="session-label">
+                        <span className="session-name">{session.label}</span>
+                        <small>{session.agent} · {session.model}</small>
+                      </span>
+                    )}
+                    {session.unread ? <i className="unread" style={{ background: turtle.color }} /> : null}
+                  </button>
+                  <button type="button" className="close" onClick={() => props.onClose(session.id)} aria-label={`Close ${session.label}`}>×</button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
       <div className="session-actions">
         <label>
@@ -91,8 +124,8 @@ export function Sidebar(props: Props) {
             ))}
           </select>
         </label>
-        <button type="button" onClick={props.onNewSession}>🍕 New session</button>
-        <button type="button" onClick={props.onBrowse}>📂 Browse…</button>
+        <button type="button" onClick={props.onNewSession}>New session</button>
+        <button type="button" onClick={props.onBrowse}>Browse…</button>
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -105,35 +138,6 @@ export function Sidebar(props: Props) {
           <input value={folder} placeholder="Or type a folder path" onChange={(event) => setFolder(event.target.value)} />
         </form>
       </div>
-      <ul className="session-list">
-        {sessions.map((session) => {
-          const turtle = TURTLES.find((item) => item.name === session.turtle) ?? TURTLES[0];
-          const active = session.id === props.state.activeSessionId;
-          return (
-            <li key={session.id} className={active ? "active" : ""}>
-              <button type="button" className="session-row" onClick={() => props.onSelect(session.id)} onDoubleClick={() => setEditingId(session.id)}>
-                <span className="mask" style={{ background: turtle.color }} />
-                {editingId === session.id ? (
-                  <input
-                    autoFocus
-                    defaultValue={session.label}
-                    onClick={(event) => event.stopPropagation()}
-                    onBlur={(event) => { props.onRename(session.id, event.target.value.trim() || session.label); setEditingId(null); }}
-                    onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }}
-                  />
-                ) : (
-                  <span className="session-label">
-                    {session.label}
-                    <small>{session.agent} · {session.model}</small>
-                  </span>
-                )}
-                {session.unread ? <i className="unread" style={{ background: turtle.color }} /> : null}
-              </button>
-              <button type="button" className="close" onClick={() => props.onClose(session.id)} aria-label={`Close ${session.label}`}>×</button>
-            </li>
-          );
-        })}
-      </ul>
     </aside>
   );
 }

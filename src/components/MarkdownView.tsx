@@ -1,7 +1,9 @@
-import { useState, type ReactNode } from "react";
+import { isValidElement, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
+import { isMermaid } from "../chat/diagram";
+import { MermaidBlock } from "./MermaidBlock";
 
 type Props = { text: string; onLink: (url: string) => void };
 
@@ -26,8 +28,10 @@ export function MarkdownView({ text, onLink }: Props) {
           </a>
         ),
         code: ({ className, children }) => {
+          const source = textContent(children).replace(/\n$/, "");
+          if (isMermaid(className)) return <MermaidBlock source={source} />;
           if (!className) return <code>{children}</code>;
-          return <CodeBlock className={className}>{children}</CodeBlock>;
+          return <CodeBlock className={className} source={source}>{children}</CodeBlock>;
         },
       }}
     >
@@ -36,15 +40,23 @@ export function MarkdownView({ text, onLink }: Props) {
   );
 }
 
-function CodeBlock({ className, children }: { className?: string; children: ReactNode }) {
+function textContent(children: ReactNode): string {
+  if (typeof children === "string") return children;
+  if (typeof children === "number") return String(children);
+  if (Array.isArray(children)) return children.map(textContent).join("");
+  if (isValidElement<{ children?: ReactNode }>(children)) return textContent(children.props.children);
+  return "";
+}
+
+function CodeBlock({ className, source, children }: { className?: string; source: string; children: ReactNode }) {
   const [copied, setCopied] = useState(false);
-  const text = String(children).replace(/\n$/, "");
   return (
     <div className="code-block">
       <button
         type="button"
+        className="control"
         onClick={() => {
-          void navigator.clipboard.writeText(text).then(() => {
+          void navigator.clipboard.writeText(source).then(() => {
             setCopied(true);
             window.setTimeout(() => setCopied(false), 1200);
           });

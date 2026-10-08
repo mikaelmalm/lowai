@@ -73,6 +73,15 @@ export function shouldNotify(windowFocused: boolean, viewingThisSession: boolean
   return !(windowFocused && viewingThisSession);
 }
 
+export function folderName(folder: string): string {
+  return folder.split(/[/\\]/).filter(Boolean).pop() || folder;
+}
+
+export function withFolder(session: Session, folder: string): Session {
+  const label = session.label === folderName(session.folder) ? folderName(folder) : session.label;
+  return { ...session, folder, label };
+}
+
 export function applyEvent(state: AppState, event: AgentEvent, viewingSessionId: string | null, windowFocused: boolean): AppState {
   const index = state.sessions.findIndex((session) => session.id === event._session_id);
   if (index === -1) return state;
@@ -120,6 +129,7 @@ function ensureOpenAgent(session: Session, edit: (message: Extract<ChatMessage, 
     done: false,
     costUsd: null,
     numTurns: null,
+    openedAt: Date.now(),
   };
   return updateOpenAgent({ ...session, messages: [...session.messages, opened] }, edit);
 }

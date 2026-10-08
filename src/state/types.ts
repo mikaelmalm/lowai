@@ -16,6 +16,7 @@ export type AgentMessage = {
   done: boolean;
   costUsd: number | null;
   numTurns: number | null;
+  openedAt?: number;
 };
 export type SystemMessage = { id: string; role: "system"; text: string };
 export type ChatMessage = UserMessage | AgentMessage | SystemMessage;
