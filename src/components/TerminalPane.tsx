@@ -5,6 +5,7 @@ import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { useEffect, useRef, useState } from "react";
 import { openSubscription } from "../lib/subscribe";
+import { TrashIcon } from "./icons";
 
 type Props = {
   sessionId: string;
@@ -12,12 +13,11 @@ type Props = {
   width: number;
   hidden: boolean;
   focusToken: number;
-  onHide: () => void;
   onKill: () => void;
   onExited: () => void;
 };
 
-export function TerminalPane({ sessionId, folder, width, hidden, focusToken, onHide, onKill, onExited }: Props) {
+export function TerminalPane({ sessionId, folder, width, hidden, focusToken, onKill, onExited }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
@@ -101,8 +101,9 @@ export function TerminalPane({ sessionId, folder, width, hidden, focusToken, onH
     <section className={hidden ? "terminal-column hidden" : "terminal-column"} style={hidden ? undefined : { width }}>
       <header>
         <strong>Terminal</strong>
-        <button type="button" className="control" onClick={onHide}>Hide</button>
-        <button type="button" className="control" onClick={onKill}>Kill</button>
+        <button type="button" className="icon-button" aria-label="Kill terminal" title="Kill terminal" onClick={onKill}>
+          <TrashIcon />
+        </button>
       </header>
       {error ? (
         <div className="terminal-error">

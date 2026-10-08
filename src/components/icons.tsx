@@ -15,6 +15,18 @@ export function SidebarIcon() {
   );
 }
 
+export function TrashIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M3.25 4.25h9.5" {...pen} />
+      <path d="M6.5 4.25v-.75a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v.75" {...pen} />
+      <path d="M4.75 4.25 5.2 12.6a1 1 0 0 0 1 .9h3.6a1 1 0 0 0 1-.9l.45-8.35" {...pen} />
+      <path d="M7 6.75v4" {...pen} />
+      <path d="M9 6.75v4" {...pen} />
+    </svg>
+  );
+}
+
 export function TerminalIcon() {
   return (
     <svg viewBox="0 0 16 16" aria-hidden="true">

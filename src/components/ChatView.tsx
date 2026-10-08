@@ -117,38 +117,42 @@ export function ChatView({ session, onSend, onModel, onLink, onPermission, onTer
         })}
         </div>
       </div>
-      <form
-        className="composer"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const text = draft.trim();
-          if (!text || busy) return;
-          setDraft("");
-          setBusy(true);
-          void onSend(text).then((result) => {
-            if (result.restore) setDraft(result.restore);
-            setBusy(false);
-          });
-        }}
-      >
-        <textarea
-          ref={field}
-          aria-label={`Message ${turtle.name}`}
-          value={draft}
-          placeholder={`Message ${turtle.name}…`}
-          rows={1}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              event.currentTarget.form?.requestSubmit();
-            }
+      <div className="composer-dock">
+        <form
+          className="composer"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const text = draft.trim();
+            if (!text || busy) return;
+            setDraft("");
+            setBusy(true);
+            void onSend(text).then((result) => {
+              if (result.restore) setDraft(result.restore);
+              setBusy(false);
+            });
           }}
-        />
-        <button type="submit" style={ink} disabled={busy || !draft.trim()}>
-          Send
-        </button>
-      </form>
+        >
+          <div className="composer-field">
+            <textarea
+              ref={field}
+              aria-label={`Message ${turtle.name}`}
+              value={draft}
+              placeholder={`Message ${turtle.name}…`}
+              rows={1}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }
+              }}
+            />
+          </div>
+          <button type="submit" style={ink} disabled={busy || !draft.trim()}>
+            Send
+          </button>
+        </form>
+      </div>
     </section>
   );
 }

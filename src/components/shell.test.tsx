@@ -75,7 +75,10 @@ describe("chat header and composer", () => {
     expect(sidebarAt).toBeGreaterThan(-1);
     expect(titleAt).toBeGreaterThan(sidebarAt);
     expect(terminalAt).toBeGreaterThan(titleAt);
-    expect(html).toContain('class="composer"');
+    expect(html).toContain('class="composer-dock"');
+    expect(html.indexOf('class="composer"')).toBeGreaterThan(html.indexOf('class="composer-dock"'));
+    expect(html).toContain('class="composer-field"');
+    expect(html).toContain("</textarea></div><button");
     expect(html).toContain('rows="1"');
     expect(html).toContain("Message Leonardo…");
   });

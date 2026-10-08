@@ -193,7 +193,6 @@ export function App() {
                   width={clampTerminalWidth(owner.terminalWidth, available)}
                   hidden={!(session.id === id && pane.visible)}
                   focusToken={focusToken}
-                  onHide={() => hideTerminal(id)}
                   onKill={() => killTerminal(id)}
                   onExited={() => setPanes((current) => current[id] ? { ...current, [id]: { ...current[id], exited: true } } : current)}
                 />
