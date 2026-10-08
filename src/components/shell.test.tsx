@@ -38,6 +38,7 @@ describe("sidebar", () => {
         onAgent={() => undefined}
         onNewSession={() => undefined}
         onBrowse={() => undefined}
+        onToggleTheme={() => undefined}
       />,
     );
     expect(html).not.toContain("New project");
@@ -47,6 +48,7 @@ describe("sidebar", () => {
     expect(html).toContain("sonnet");
     expect(html).toContain("New session");
     expect(html).toContain("Browse");
+    expect(html).toContain("Light mode");
     const nameAt = html.indexOf("session-name");
     const tagAt = html.indexOf("session-tag");
     expect(nameAt).toBeGreaterThan(-1);
@@ -67,6 +69,7 @@ describe("chat header and composer", () => {
         onSidebar={() => undefined}
         sidebarOpen
         terminalOpen={false}
+        theme="dark"
       />,
     );
     const sidebarAt = html.indexOf('aria-label="Sidebar"');

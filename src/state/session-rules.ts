@@ -2,7 +2,7 @@ import { reduceBlocks } from "../chat/blocks";
 import { DEFAULT_SIDEBAR_WIDTH } from "../sidebar/rules";
 import { DEFAULT_TERMINAL_WIDTH } from "../terminal/rules";
 import { savedAgent, savedModel } from "./agents";
-import type { AgentEvent, AppState, ChatMessage, Session } from "./types";
+import type { AgentEvent, AppState, ChatMessage, Session, Theme } from "./types";
 
 export function freshState(): AppState {
   const projectId = "project-personal";
@@ -14,6 +14,7 @@ export function freshState(): AppState {
     sidebarWidth: DEFAULT_SIDEBAR_WIDTH,
     sidebarHidden: false,
     selectedAgent: "grok",
+    theme: "dark",
   };
 }
 
@@ -57,8 +58,13 @@ export function hydrate(raw: unknown): { state: AppState; corrupt: boolean } {
       sidebarWidth: savedWidth((raw as { sidebarWidth?: unknown }).sidebarWidth, DEFAULT_SIDEBAR_WIDTH),
       sidebarHidden: raw.sidebarHidden === true,
       selectedAgent: savedAgent((raw as { selectedAgent?: unknown }).selectedAgent),
+      theme: savedTheme((raw as { theme?: unknown }).theme),
     },
   };
+}
+
+function savedTheme(theme: unknown): Theme {
+  return theme === "light" ? "light" : "dark";
 }
 
 function savedWidth(width: unknown, fallback = DEFAULT_TERMINAL_WIDTH): number {

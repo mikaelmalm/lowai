@@ -1,18 +1,44 @@
 :root {
   color-scheme: dark;
   font-family: "Inter Variable", "Noto Color Emoji", sans-serif;
+  --chrome-bg: #1f2328;
+  --chrome-ink: #e7ecf1;
+  --chrome-muted: #9aa6b2;
+  --chrome-control: #2a3038;
+  --chrome-control-hover: #343c46;
+  --chrome-line: #3a424c;
   --bg: #101418;
-  --sidebar: #1f2328;
+  --sidebar: var(--chrome-bg);
   --raised: #1b2128;
-  --control: #2a3038;
-  --control-hover: #343c46;
-  --line: #3a424c;
-  --ink: #e7ecf1;
-  --muted: #9aa6b2;
+  --control: var(--chrome-control);
+  --control-hover: var(--chrome-control-hover);
+  --line: var(--chrome-line);
+  --ink: var(--chrome-ink);
+  --muted: var(--chrome-muted);
   --warn: #f0c6a0;
   --banner: #3a2a1a;
   --note: #2a2420;
+  --inset: #12171c;
+  --code: #0e1216;
+  --code-ink: #e7ecf1;
   background: transparent;
+  color: var(--ink);
+  scrollbar-color: var(--line) transparent;
+}
+
+.window[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f3f5f7;
+  --raised: #ffffff;
+  --control: #e7edf2;
+  --control-hover: #d9e2ea;
+  --line: #d3dde6;
+  --ink: #1c242c;
+  --muted: #5c6c7a;
+  --warn: #8f4e12;
+  --banner: #f8ecdc;
+  --note: #f6f1e8;
+  --inset: #e7eef3;
   color: var(--ink);
   scrollbar-color: var(--line) transparent;
 }
@@ -33,7 +59,7 @@ button:disabled { opacity: 0.45; cursor: default; }
   display: flex;
   flex-direction: column;
   background: var(--bg);
-  border: 1px solid var(--line);
+  border: 1px solid var(--chrome-line);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -45,8 +71,15 @@ html.maximized .window { border-radius: 0; border-color: transparent; }
   align-items: center;
   gap: 8px;
   padding-left: 12px;
+  --ink: var(--chrome-ink);
+  --muted: var(--chrome-muted);
+  --control: var(--chrome-control);
+  --control-hover: var(--chrome-control-hover);
+  --line: var(--chrome-line);
+  --sidebar: var(--chrome-bg);
   background: var(--sidebar);
   color: var(--muted);
+  color-scheme: dark;
   user-select: none;
   font-size: 0.85rem;
 }
@@ -65,7 +98,15 @@ html.maximized .window { border-radius: 0; border-color: transparent; }
 .app { display: flex; flex: 1; min-height: 0; }
 .sidebar {
   flex: none;
+  --ink: var(--chrome-ink);
+  --muted: var(--chrome-muted);
+  --control: var(--chrome-control);
+  --control-hover: var(--chrome-control-hover);
+  --line: var(--chrome-line);
+  --sidebar: var(--chrome-bg);
   background: var(--sidebar);
+  color: var(--ink);
+  color-scheme: dark;
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -164,6 +205,7 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height:
   padding: 8px 10px;
   border-bottom: 1px solid var(--control);
 }
+.window[data-theme="light"] .chat-header { border-bottom-color: var(--line); }
 .header-slot { flex: 1 1 0; display: flex; align-items: center; gap: 2px; min-width: max-content; }
 .header-slot.end { justify-content: flex-end; }
 .chat-header .icon-button {
@@ -227,7 +269,7 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height:
 .agent-cost { font-variant-numeric: tabular-nums; }
 .agent-card a { color: var(--turtle, #8ec8ff); }
 .thinking { display: flex; align-items: baseline; gap: 6px; color: var(--muted); font-style: italic; }
-.permission-card { display: flex; flex-direction: column; gap: 8px; background: #12171c; border-radius: 8px; padding: 8px; margin: 6px 0; }
+.permission-card { display: flex; flex-direction: column; gap: 8px; background: var(--inset); border-radius: 8px; padding: 8px; margin: 6px 0; }
 .permission-card code { white-space: pre-wrap; }
 .permission-card .actions { display: flex; gap: 8px; }
 .permission-card button { border: 0; border-radius: 8px; padding: 6px 12px; color: white; }
@@ -236,19 +278,20 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height:
 .permission-card button.deny { background: #6f3a32; }
 .permission-card button.deny:hover { background: #7d453c; }
 .permission-card button:disabled { opacity: 0.55; }
-.tool-row { display: flex; gap: 8px; align-items: center; background: #12171c; border-radius: 8px; padding: 6px 8px; margin: 6px 0; }
+.tool-row { display: flex; gap: 8px; align-items: center; background: var(--inset); border-radius: 8px; padding: 6px 8px; margin: 6px 0; }
 .tool-row.spinning code { opacity: 0.7; }
 .system-card { background: var(--note); border-radius: 10px; padding: 10px 12px; white-space: pre-wrap; }
 .code-block { position: relative; }
 .code-block .control { position: absolute; right: 8px; top: 8px; }
-.code-block pre { overflow: auto; background: #0e1216; padding: 12px; border-radius: 8px; }
+.code-block pre { overflow: auto; background: var(--code); color: var(--code-ink); padding: 12px; border-radius: 8px; }
+.agent-card p code, .agent-card li code { background: var(--control); border-radius: 4px; padding: 0.1em 0.35em; }
 .diagram-block { position: relative; margin: 8px 0; background: var(--raised); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
 .diagram-block .control { position: absolute; right: 8px; top: 8px; }
 .diagram-frame { overflow: auto; padding-top: 28px; }
 .diagram-frame svg { max-width: 100%; height: auto; }
 .diagram-block details { margin-top: 8px; }
 .diagram-block summary { cursor: pointer; color: var(--muted); }
-.diagram-block details pre { overflow: auto; margin: 8px 0 0; background: #0e1216; padding: 12px; border-radius: 8px; }
+.diagram-block details pre { overflow: auto; margin: 8px 0 0; background: var(--code); color: var(--code-ink); padding: 12px; border-radius: 8px; }
 .composer-dock {
   position: relative;
   z-index: 1;

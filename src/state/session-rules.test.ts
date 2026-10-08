@@ -74,6 +74,20 @@ describe("session rules", () => {
     expect(invalid.sidebarHidden).toBe(false);
   });
 
+  it("loads the theme and defaults to dark", () => {
+    const missing = hydrate({
+      projects: [{ id: "p", name: "Personal" }],
+      activeProjectId: "p",
+      activeSessionId: null,
+      sessions: [],
+    }).state;
+    expect(missing.theme).toBe("dark");
+    const light = hydrate({ ...missing, theme: "light" }).state;
+    expect(light.theme).toBe("light");
+    const invalid = hydrate({ ...missing, theme: "sepia" }).state;
+    expect(invalid.theme).toBe("dark");
+  });
+
   it("loads a session with no agent as grok", () => {
     const saved = session();
     const { agent: _agent, ...without } = saved;

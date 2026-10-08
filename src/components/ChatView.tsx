@@ -3,6 +3,7 @@ import { isAtBottom } from "../chat/scroll";
 import { modelsFor } from "../state/agents";
 import type { Session } from "../state/types";
 import { sidebarModifier } from "../sidebar/rules";
+import type { Theme } from "../state/types";
 import { readableOn, TURTLES } from "../theme/turtles";
 import { AgentCard } from "./AgentCard";
 import { CardErrorBoundary } from "./CardErrorBoundary";
@@ -18,9 +19,10 @@ type Props = {
   onSidebar: () => void;
   sidebarOpen: boolean;
   terminalOpen: boolean;
+  theme: Theme;
 };
 
-export function ChatView({ session, onSend, onModel, onLink, onPermission, onTerminal, onSidebar, sidebarOpen, terminalOpen }: Props) {
+export function ChatView({ session, onSend, onModel, onLink, onPermission, onTerminal, onSidebar, sidebarOpen, terminalOpen, theme }: Props) {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
@@ -111,7 +113,7 @@ export function ChatView({ session, onSend, onModel, onLink, onPermission, onTer
           }
           return (
             <CardErrorBoundary key={message.id}>
-              <AgentCard message={message} turtle={turtle.name} color={turtle.color} folder={session.folder} onLink={onLink} onPermission={onPermission} />
+              <AgentCard message={message} turtle={turtle.name} color={turtle.color} folder={session.folder} theme={theme} onLink={onLink} onPermission={onPermission} />
             </CardErrorBoundary>
           );
         })}

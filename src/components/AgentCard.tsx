@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { AgentMessage } from "../state/types";
+import type { AgentMessage, Theme } from "../state/types";
 import { MarkdownView } from "./MarkdownView";
 import { PermissionCard } from "./PermissionCard";
 import { ToolCallRow } from "./ToolCallRow";
@@ -20,6 +20,7 @@ export function AgentCard({
   turtle,
   color,
   folder,
+  theme,
   onLink,
   onPermission,
 }: {
@@ -27,6 +28,7 @@ export function AgentCard({
   turtle: string;
   color: string;
   folder: string;
+  theme: Theme;
   onLink: (url: string) => void;
   onPermission: (requestId: string, allow: boolean) => void;
 }) {
@@ -50,7 +52,7 @@ export function AgentCard({
       </header>
       {message.blocks.length === 0 && !message.done ? <p className="thinking"><span aria-hidden="true">🥷</span>{THINKING[tick % THINKING.length]}</p> : null}
       {message.blocks.map((block) => {
-        if (block.type === "text") return <MarkdownView key={block.id} text={block.text} onLink={onLink} />;
+        if (block.type === "text") return <MarkdownView key={block.id} text={block.text} theme={theme} onLink={onLink} />;
         if (block.type === "permission") {
           return (
             <PermissionCard

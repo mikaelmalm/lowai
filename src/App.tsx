@@ -92,7 +92,7 @@ export function App() {
   const sidebarWidth = clampSidebarWidth(api.state.sidebarWidth, windowWidth, paneVisible ? width : 0);
 
   return (
-    <div className="window">
+    <div className="window" data-theme={api.state.theme}>
     <TitleBar />
     <div className="app" ref={appRef}>
       {api.state.sidebarHidden ? null : (
@@ -116,6 +116,7 @@ export function App() {
         onAgent={api.setAgent}
         onNewSession={() => api.addSession(session?.folder || ".")}
         onBrowse={() => { void api.browse(); }}
+        onToggleTheme={api.toggleTheme}
         />
       )}
       {api.state.sidebarHidden ? null : (
@@ -160,6 +161,7 @@ export function App() {
                 onSidebar={api.toggleSidebar}
                 sidebarOpen={!api.state.sidebarHidden}
                 terminalOpen={paneVisible}
+                theme={api.state.theme}
               />
             </div>
             {paneVisible ? (
@@ -193,6 +195,7 @@ export function App() {
                   width={clampTerminalWidth(owner.terminalWidth, available)}
                   hidden={!(session.id === id && pane.visible)}
                   focusToken={focusToken}
+                  theme={api.state.theme}
                   onKill={() => killTerminal(id)}
                   onExited={() => setPanes((current) => current[id] ? { ...current, [id]: { ...current[id], exited: true } } : current)}
                 />

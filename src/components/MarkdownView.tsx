@@ -3,11 +3,12 @@ import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
 import { isMermaid } from "../chat/diagram";
+import type { Theme } from "../state/types";
 import { MermaidBlock } from "./MermaidBlock";
 
-type Props = { text: string; onLink: (url: string) => void };
+type Props = { text: string; theme: Theme; onLink: (url: string) => void };
 
-export function MarkdownView({ text, onLink }: Props) {
+export function MarkdownView({ text, theme, onLink }: Props) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -29,7 +30,7 @@ export function MarkdownView({ text, onLink }: Props) {
         ),
         code: ({ className, children }) => {
           const source = textContent(children).replace(/\n$/, "");
-          if (isMermaid(className)) return <MermaidBlock source={source} />;
+          if (isMermaid(className)) return <MermaidBlock source={source} theme={theme} />;
           if (!className) return <code>{children}</code>;
           return <CodeBlock className={className} source={source}>{children}</CodeBlock>;
         },

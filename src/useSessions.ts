@@ -370,6 +370,7 @@ export function useSessions() {
     })),
     setSidebarWidth: (width: number) => patch((current) => ({ ...current, sidebarWidth: width })),
     toggleSidebar: () => patch((current) => ({ ...current, sidebarHidden: !current.sidebarHidden })),
+    toggleTheme: () => patch((current) => ({ ...current, theme: current.theme === "light" ? "dark" : "light" })),
     send,
     changeModel,
     openLink: (url: string) => {
