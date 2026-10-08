@@ -5,7 +5,8 @@ import { ChatView } from "./components/ChatView";
 import { Sidebar } from "./components/Sidebar";
 import { TerminalPane } from "./components/TerminalPane";
 import { useSessions } from "./useSessions";
-import { clampTerminalWidth } from "./terminal/rules";
+import { clampSidebarWidth, sidebarShortcut } from "./sidebar/rules";
+import { clampTerminalWidth, DEFAULT_TERMINAL_WIDTH } from "./terminal/rules";
 import "./theme/theme.css";
 
 type PaneRecord = { visible: boolean; generation: number; exited: boolean };
@@ -16,7 +17,11 @@ export function App() {
   const [panes, setPanes] = useState<Record<string, PaneRecord>>({});
   const [focusToken, setFocusToken] = useState(0);
   const [available, setAvailable] = useState(1200);
+  const [windowWidth, setWindowWidth] = useState(1400);
   const splitRef = useRef<HTMLDivElement>(null);
+  const appRef = useRef<HTMLDivElement>(null);
+  const toggleSidebarRef = useRef(api.toggleSidebar);
+  toggleSidebarRef.current = api.toggleSidebar;
   const sessionId = session?.id ?? null;
 
   useEffect(() => {
@@ -27,6 +32,26 @@ export function App() {
     setAvailable(element.clientWidth);
     return () => observer.disconnect();
   }, [sessionId]);
+
+  useEffect(() => {
+    const element = appRef.current;
+    if (!element) return;
+    const observer = new ResizeObserver(() => setWindowWidth(element.clientWidth));
+    observer.observe(element);
+    setWindowWidth(element.clientWidth);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      const terminalFocused = Boolean(document.activeElement?.closest(".terminal-column"));
+      if (!sidebarShortcut(event, terminalFocused)) return;
+      event.preventDefault();
+      toggleSidebarRef.current();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -61,12 +86,15 @@ export function App() {
     });
   }
 
-  const width = clampTerminalWidth(api.state.terminalWidth, available);
+  const width = clampTerminalWidth(session?.terminalWidth ?? DEFAULT_TERMINAL_WIDTH, available);
   const paneVisible = sessionId ? Boolean(panes[sessionId]?.visible) : false;
+  const sidebarWidth = clampSidebarWidth(api.state.sidebarWidth, windowWidth, paneVisible ? width : 0);
 
   return (
-    <div className="app">
-      <Sidebar
+    <div className="app" ref={appRef}>
+      {api.state.sidebarHidden ? null : (
+        <Sidebar
+          style={{ width: sidebarWidth }}
         state={api.state}
         onProject={api.selectProject}
         onCreateProject={api.createProject}
@@ -85,7 +113,29 @@ export function App() {
         onNewSession={() => api.addSession(session?.folder || ".")}
         onBrowse={() => { void api.browse(); }}
         onTypedFolder={api.addSession}
-      />
+        />
+      )}
+      {api.state.sidebarHidden ? null : (
+        <div
+          className="sash"
+          onPointerDown={(event) => {
+            event.preventDefault();
+            const startX = event.clientX;
+            const startWidth = sidebarWidth;
+            const bounds = appRef.current?.clientWidth ?? windowWidth;
+            const reserve = paneVisible ? width : 0;
+            function move(moveEvent: PointerEvent) {
+              api.setSidebarWidth(clampSidebarWidth(startWidth + (moveEvent.clientX - startX), bounds, reserve));
+            }
+            function up() {
+              window.removeEventListener("pointermove", move);
+              window.removeEventListener("pointerup", up);
+            }
+            window.addEventListener("pointermove", move);
+            window.addEventListener("pointerup", up);
+          }}
+        />
+      )}
       <main>
         {api.banner ? (
           <div className="banner">
@@ -103,6 +153,7 @@ export function App() {
                 onModel={(model) => { void api.changeModel(session.id, model); }}
                 onLink={api.openLink}
                 onTerminal={() => openTerminal(session.id)}
+                onSidebar={api.toggleSidebar}
               />
             </div>
             {paneVisible ? (
@@ -114,7 +165,7 @@ export function App() {
                   const startWidth = width;
                   const bounds = splitRef.current?.clientWidth ?? available;
                   function move(moveEvent: PointerEvent) {
-                    api.setTerminalWidth(clampTerminalWidth(startWidth - (moveEvent.clientX - startX), bounds));
+                    if (sessionId) api.setTerminalWidth(sessionId, clampTerminalWidth(startWidth - (moveEvent.clientX - startX), bounds));
                   }
                   function up() {
                     window.removeEventListener("pointermove", move);
@@ -133,7 +184,7 @@ export function App() {
                   key={`${id}-${pane.generation}`}
                   sessionId={id}
                   folder={owner.folder}
-                  width={width}
+                  width={clampTerminalWidth(owner.terminalWidth, available)}
                   hidden={!(session.id === id && pane.visible)}
                   focusToken={focusToken}
                   onHide={() => hideTerminal(id)}
@@ -145,6 +196,7 @@ export function App() {
           </div>
         ) : (
           <section className="empty">
+            <button type="button" onClick={api.toggleSidebar}>Sidebar</button>
             <h1>AI Shell</h1>
             <p>Open a folder to start a Grok session. Sessions in other projects keep running.</p>
           </section>

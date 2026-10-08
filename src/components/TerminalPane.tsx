@@ -32,7 +32,7 @@ export function TerminalPane({ sessionId, folder, width, hidden, focusToken, onH
     const term = new Terminal({
       cursorBlink: true,
       fontSize: 14,
-      fontFamily: "ui-monospace, monospace",
+      fontFamily: '"JetBrainsMono Nerd Font Mono", "Noto Color Emoji", monospace',
       scrollback: 5000,
       theme: { background: "#101418", foreground: "#e7ecf1", cursor: "#e7ecf1" },
     });

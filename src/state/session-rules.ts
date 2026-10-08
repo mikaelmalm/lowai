@@ -1,4 +1,5 @@
 import { reduceBlocks } from "../chat/blocks";
+import { DEFAULT_SIDEBAR_WIDTH } from "../sidebar/rules";
 import { DEFAULT_TERMINAL_WIDTH } from "../terminal/rules";
 import type { AgentEvent, AppState, ChatMessage, Session } from "./types";
 
@@ -9,7 +10,8 @@ export function freshState(): AppState {
     activeProjectId: projectId,
     activeSessionId: null,
     sessions: [],
-    terminalWidth: DEFAULT_TERMINAL_WIDTH,
+    sidebarWidth: DEFAULT_SIDEBAR_WIDTH,
+    sidebarHidden: false,
   };
 }
 
@@ -26,7 +28,11 @@ export function finishForLoad(session: Session): Session {
 
 export function hydrate(raw: unknown): { state: AppState; corrupt: boolean } {
   if (!isState(raw)) return { state: freshState(), corrupt: true };
-  const sessions = raw.sessions.map(finishForLoad);
+  const fallbackWidth = savedWidth((raw as { terminalWidth?: unknown }).terminalWidth);
+  const sessions = raw.sessions.map((session) => finishForLoad({
+    ...session,
+    terminalWidth: savedWidth(session.terminalWidth, fallbackWidth),
+  }));
   const activeProjectId = raw.projects.some((project) => project.id === raw.activeProjectId)
     ? raw.activeProjectId
     : raw.projects[0].id;
@@ -40,13 +46,14 @@ export function hydrate(raw: unknown): { state: AppState; corrupt: boolean } {
       activeProjectId,
       activeSessionId: activeInProject ? raw.activeSessionId : sessions.find((session) => session.projectId === activeProjectId)?.id ?? null,
       sessions,
-      terminalWidth: savedWidth(raw),
+      sidebarWidth: savedWidth((raw as { sidebarWidth?: unknown }).sidebarWidth, DEFAULT_SIDEBAR_WIDTH),
+      sidebarHidden: raw.sidebarHidden === true,
     },
   };
 }
 
-function savedWidth(raw: AppState): number {
-  return typeof raw.terminalWidth === "number" && Number.isFinite(raw.terminalWidth) ? raw.terminalWidth : DEFAULT_TERMINAL_WIDTH;
+function savedWidth(width: unknown, fallback = DEFAULT_TERMINAL_WIDTH): number {
+  return typeof width === "number" && Number.isFinite(width) ? width : fallback;
 }
 
 export function clearsAgentId(kind: "missing" | "other"): boolean {

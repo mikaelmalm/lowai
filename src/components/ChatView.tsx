@@ -11,9 +11,10 @@ type Props = {
   onModel: (model: string) => void;
   onLink: (url: string) => void;
   onTerminal: () => void;
+  onSidebar: () => void;
 };
 
-export function ChatView({ session, onSend, onModel, onLink, onTerminal }: Props) {
+export function ChatView({ session, onSend, onModel, onLink, onTerminal, onSidebar }: Props) {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const turtle = TURTLES.find((item) => item.name === session.turtle) ?? TURTLES[0];
@@ -24,6 +25,7 @@ export function ChatView({ session, onSend, onModel, onLink, onTerminal }: Props
           <strong>{session.label}</strong>
           <span>{session.folder}</span>
         </div>
+        <button type="button" onClick={onSidebar}>Sidebar</button>
         <button type="button" onClick={onTerminal}>Terminal</button>
         <label>
           Model

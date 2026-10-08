@@ -28,6 +28,7 @@ export type Session = {
   messages: ChatMessage[];
   unread: boolean;
   status: "asleep" | "running";
+  terminalWidth: number;
 };
 
 export type Project = { id: string; name: string };
@@ -37,7 +38,8 @@ export type AppState = {
   activeProjectId: string;
   activeSessionId: string | null;
   sessions: Session[];
-  terminalWidth: number;
+  sidebarWidth: number;
+  sidebarHidden: boolean;
 };
 
 export type AgentEvent = {

@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import type { AppState } from "../state/types";
 import { canDeleteProject } from "../state/projects";
 import { TURTLES } from "../theme/turtles";
 
 type Props = {
+  style?: CSSProperties;
   state: AppState;
   onProject: (id: string) => void;
   onCreateProject: (name: string) => void;
@@ -27,7 +28,7 @@ export function Sidebar(props: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const sessionCount = sessions.length;
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" style={props.style}>
       <div className="project-switcher">
         {editingProject ? (
           <input

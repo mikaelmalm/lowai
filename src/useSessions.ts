@@ -5,6 +5,7 @@ import { isPermissionGranted, requestPermission, sendNotification } from "@tauri
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useEffect, useRef, useState } from "react";
 import { playTone } from "./lib/sound";
+import { DEFAULT_TERMINAL_WIDTH } from "./terminal/rules";
 import { openSubscription } from "./lib/subscribe";
 import { applyEvent, clearsAgentId, freshState, hydrate, shouldNotify } from "./state/session-rules";
 import type { AgentEvent, AppState, ChatMessage, Session } from "./state/types";
@@ -112,6 +113,7 @@ export function useSessions() {
       messages: [],
       unread: false,
       status: "asleep",
+      terminalWidth: DEFAULT_TERMINAL_WIDTH,
     };
     patch((current) => ({ ...current, activeSessionId: session.id, sessions: [...current.sessions, session] }));
   }
@@ -283,7 +285,12 @@ export function useSessions() {
     addSession,
     browse,
     closeSession,
-    setTerminalWidth: (width: number) => patch((current) => ({ ...current, terminalWidth: width })),
+    setTerminalWidth: (sessionId: string, width: number) => patch((current) => ({
+      ...current,
+      sessions: current.sessions.map((session) => (session.id === sessionId ? { ...session, terminalWidth: width } : session)),
+    })),
+    setSidebarWidth: (width: number) => patch((current) => ({ ...current, sidebarWidth: width })),
+    toggleSidebar: () => patch((current) => ({ ...current, sidebarHidden: !current.sidebarHidden })),
     send,
     changeModel,
     openLink: (url: string) => {
