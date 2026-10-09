@@ -9,6 +9,35 @@ export function keepDrawnSvg(current: string | null, incoming: string | null): s
   return incoming ?? current;
 }
 
+const drawings = new Map<string, string>();
+
+function diagramKey(source: string, theme: Theme): string {
+  return `${theme}\n${source}`;
+}
+
+export function rememberDrawnSvg(source: string, theme: Theme, svg: string): string {
+  drawings.set(diagramKey(source, theme), svg);
+  return svg;
+}
+
+export function drawnSvgFor(source: string, theme: Theme): string | null {
+  return drawings.get(diagramKey(source, theme)) ?? null;
+}
+
+export function heldDiagram(current: string | null, source: string, theme: Theme): string | null {
+  return drawnSvgFor(source, theme) ?? current;
+}
+
+export function fitDiagramSvg(svg: string): string {
+  return svg.replace(/<svg\b([^>]*)>/i, (_match, attrs: string) => {
+    let next = attrs.replace(/max-width:\s*[^;"']+;?/gi, "");
+    if (/viewBox=/i.test(attrs)) {
+      next = next.replace(/\s(?:width|height)="[^"]*"/gi, "");
+    }
+    return `<svg${next}>`;
+  });
+}
+
 let loading: Promise<typeof mermaid> | null = null;
 
 function load(): Promise<typeof mermaid> {
@@ -81,7 +110,7 @@ export async function drawDiagram(source: string, id: string, theme: Theme = "da
   try {
     const { svg } = await api.render(id, trimmed);
     if (/<script|javascript:/i.test(svg)) return null;
-    return svg;
+    return rememberDrawnSvg(source, theme, fitDiagramSvg(svg));
   } catch {
     return null;
   } finally {

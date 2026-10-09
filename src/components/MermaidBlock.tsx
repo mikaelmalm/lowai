@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { drawDiagram, keepDrawnSvg } from "../chat/diagram";
+import { drawDiagram, heldDiagram, keepDrawnSvg } from "../chat/diagram";
 import type { Theme } from "../state/types";
 
 export function MermaidBlock({ source, theme }: { source: string; theme: Theme }) {
-  const [svg, setSvg] = useState<string | null>(null);
+  const [svg, setSvg] = useState<string | null>(() => heldDiagram(null, source, theme));
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    setSvg((current) => heldDiagram(current, source, theme));
+    if (heldDiagram(null, source, theme)) return;
     let cancelled = false;
     const handle = window.setTimeout(() => {
       const id = `mmd${crypto.randomUUID().replaceAll("-", "")}`;

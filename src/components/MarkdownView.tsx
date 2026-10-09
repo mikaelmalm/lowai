@@ -1,4 +1,4 @@
-import { isValidElement, useMemo, useState, type ReactNode } from "react";
+import { isValidElement, useMemo, useRef, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
@@ -9,18 +9,20 @@ import { MermaidBlock } from "./MermaidBlock";
 type Props = { text: string; theme: Theme; onLink: (url: string) => void };
 
 export function MarkdownView({ text, theme, onLink }: Props) {
+  const onLinkRef = useRef(onLink);
+  onLinkRef.current = onLink;
   const components = useMemo(() => ({
     a: ({ href, children }: { href?: string; children?: ReactNode }) => {
       const url = href ?? "";
       if (!isSafeLink(url)) return <span>{children}</span>;
       return (
-        <a href={url} onClick={(event) => { event.preventDefault(); onLink(url); }}>
+        <a href={url} onClick={(event) => { event.preventDefault(); onLinkRef.current(url); }}>
           {children}
         </a>
       );
     },
     img: ({ alt, src }: { alt?: string; src?: string }) => (
-      <a href={src} onClick={(event) => { event.preventDefault(); if (src && isSafeLink(src)) onLink(src); }}>
+      <a href={src} onClick={(event) => { event.preventDefault(); if (src && isSafeLink(src)) onLinkRef.current(src); }}>
         {alt || src || "image"}
       </a>
     ),
@@ -30,7 +32,7 @@ export function MarkdownView({ text, theme, onLink }: Props) {
       if (!className) return <code>{children}</code>;
       return <CodeBlock className={className} source={source}>{children}</CodeBlock>;
     },
-  }), [theme, onLink]);
+  }), [theme]);
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
