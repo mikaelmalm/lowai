@@ -79,6 +79,12 @@ export function shouldNotify(windowFocused: boolean, viewingThisSession: boolean
   return !(windowFocused && viewingThisSession);
 }
 
+export function alertTone(kind: AgentEvent["kind"]): "done" | "ended" | null {
+  if (kind === "turn_done" || kind === "permission") return "done";
+  if (kind === "process_exited") return "ended";
+  return null;
+}
+
 export function folderName(folder: string): string {
   return folder.split(/[/\\]/).filter(Boolean).pop() || folder;
 }
@@ -95,7 +101,7 @@ export function applyEvent(state: AppState, event: AgentEvent, viewingSessionId:
   let next = session;
   if (event.kind === "permission") {
     next = ensureOpenAgent(session, (message) => ({ ...message, blocks: reduceBlocks(message.blocks, event) }));
-    if (viewingSessionId !== session.id) next = { ...next, unread: true };
+    next = { ...next, unread: shouldNotify(windowFocused, viewingSessionId === session.id) };
   } else if (event.kind === "text_delta" || event.kind === "tool_start" || event.kind === "tool_done") {
     next = updateOpenAgent(session, (message) => ({ ...message, blocks: reduceBlocks(message.blocks, event) }));
   } else if (event.kind === "turn_done") {

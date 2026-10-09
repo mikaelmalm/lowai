@@ -8,7 +8,7 @@ import { playTone } from "./lib/sound";
 import { openSubscription } from "./lib/subscribe";
 import { answerBlock } from "./chat/blocks";
 import { defaultModel, installedAgent, type AgentId } from "./state/agents";
-import { applyEvent, clearsAgentId, freshState, hydrate, shouldNotify, withFolder } from "./state/session-rules";
+import { alertTone, applyEvent, clearsAgentId, freshState, hydrate, shouldNotify, withFolder } from "./state/session-rules";
 import type { AgentEvent, AppState, ChatMessage, Session } from "./state/types";
 import { shellCd, DEFAULT_TERMINAL_WIDTH } from "./terminal/rules";
 import { assignTurtle } from "./theme/turtles";
@@ -39,14 +39,17 @@ export function useSessions() {
         const next = applyEvent(stateRef.current, payload, viewing, focused);
         stateRef.current = next;
         setState(next);
-        if (payload.kind === "turn_done" || payload.kind === "process_exited") {
+        const tone = alertTone(payload.kind);
+        if (tone) {
           const session = next.sessions.find((item) => item.id === payload._session_id);
           if (session && shouldNotify(focused, viewing === session.id)) {
             const project = next.projects.find((item) => item.id === session.projectId)?.name ?? "Project";
             const body = payload.kind === "process_exited"
               ? "Session ended"
-              : replyPreview(session) || "Reply ready";
-            playTone(payload.kind === "process_exited" ? "ended" : "done");
+              : payload.kind === "permission"
+                ? "Waiting for approval"
+                : replyPreview(session) || "Reply ready";
+            playTone(tone);
             void notify(`${project} · ${session.label}`, body);
           }
         }

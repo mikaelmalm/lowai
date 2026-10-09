@@ -4,6 +4,7 @@ export function playTone(kind: "done" | "ended") {
   const AudioCtx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AudioCtx) return;
   context ??= new AudioCtx();
+  void context.resume();
   const oscillator = context.createOscillator();
   const gain = context.createGain();
   oscillator.frequency.value = kind === "done" ? 880 : 196;

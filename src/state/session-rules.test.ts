@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SIDEBAR_WIDTH } from "../sidebar/rules";
 import { DEFAULT_TERMINAL_WIDTH } from "../terminal/rules";
-import { applyEvent, clearsAgentId, finishForLoad, folderName, hydrate, shouldNotify, withFolder } from "./session-rules";
+import { alertTone, applyEvent, clearsAgentId, finishForLoad, folderName, hydrate, shouldNotify, withFolder } from "./session-rules";
 import type { Session } from "./types";
 
 const session = (partial: Partial<Session> = {}): Session => ({
@@ -148,6 +148,8 @@ describe("session rules", () => {
     });
     const visible = applyEvent(state, { _session_id: "s1", kind: "permission", requestId: "p1", name: "Bash" }, "s1", true);
     expect(visible.sessions[0].unread).toBe(false);
+    const unfocused = applyEvent(state, { _session_id: "s1", kind: "permission", requestId: "p1", name: "Bash" }, "s1", false);
+    expect(unfocused.sessions[0].unread).toBe(true);
   });
 
   it("treats a bad saved shape as corrupt", () => {
@@ -169,6 +171,13 @@ describe("session rules", () => {
     expect(shouldNotify(true, true)).toBe(false);
     expect(shouldNotify(true, false)).toBe(true);
     expect(shouldNotify(false, true)).toBe(true);
+  });
+
+  it("plays a ping when a turn finishes, a tool asks, or the process exits", () => {
+    expect(alertTone("turn_done")).toBe("done");
+    expect(alertTone("permission")).toBe("done");
+    expect(alertTone("process_exited")).toBe("ended");
+    expect(alertTone("text_delta")).toBeNull();
   });
 
   it("stamps a reply when it opens and keeps that time", () => {
