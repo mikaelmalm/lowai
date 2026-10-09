@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SIDEBAR_WIDTH } from "../sidebar/rules";
 import { DEFAULT_TERMINAL_WIDTH } from "../terminal/rules";
-import { alertTone, applyEvent, clearsAgentId, finishForLoad, folderName, hydrate, nextChatWidth, shouldNotify, withFolder } from "./session-rules";
+import { alertTone, applyEvent, clearedSession, clearsAgentId, finishForLoad, folderName, hydrate, isClearCommand, nextChatWidth, shouldNotify, withFolder } from "./session-rules";
 import type { Session } from "./types";
 
 const session = (partial: Partial<Session> = {}): Session => ({
@@ -210,6 +210,39 @@ describe("session rules", () => {
     expect(first.openedAt).toEqual(expect.any(Number));
     const later = applyEvent(opened, { _session_id: "s1", kind: "tool_done", toolId: "p1" }, "s1", true);
     expect(later.sessions[0].messages[0]).toMatchObject({ openedAt: first.openedAt });
+  });
+
+  it("treats a lone /clear as the clear command", () => {
+    expect(isClearCommand("/clear")).toBe(true);
+    expect(isClearCommand("  /clear\n")).toBe(true);
+    expect(isClearCommand("/clear please")).toBe(false);
+    expect(isClearCommand("clear")).toBe(false);
+  });
+
+  it("drops the transcript and the agent id when a session is cleared", () => {
+    const next = clearedSession(session({
+      agentSessionId: "agent-1",
+      unread: true,
+      status: "running",
+      messages: [{ id: "u", role: "user", text: "review this" }],
+    }));
+    expect(next.messages).toEqual([]);
+    expect(next.agentSessionId).toBeNull();
+    expect(next.status).toBe("asleep");
+    expect(next.unread).toBe(false);
+    expect(next.label).toBe("app");
+  });
+
+  it("does not add a session-ended card when the transcript is already empty", () => {
+    const state = hydrate({
+      projects: [{ id: "p", name: "Personal" }],
+      activeProjectId: "p",
+      activeSessionId: "s1",
+      sessions: [session({ messages: [], agentSessionId: null, status: "running" })],
+    }).state;
+    const next = applyEvent(state, { _session_id: "s1", kind: "process_exited", stderr: "boom" }, "s1", false);
+    expect(next.sessions[0].messages).toEqual([]);
+    expect(next.sessions[0].status).toBe("asleep");
   });
 
   it("appends a session-ended card and goes to sleep", () => {

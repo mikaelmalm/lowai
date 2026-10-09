@@ -8,7 +8,7 @@ import { playTone } from "./lib/sound";
 import { openSubscription } from "./lib/subscribe";
 import { answerBlock } from "./chat/blocks";
 import { defaultModel, installedAgent, type AgentId } from "./state/agents";
-import { alertTone, applyEvent, clearsAgentId, freshState, hydrate, nextChatWidth, shouldNotify, withFolder } from "./state/session-rules";
+import { alertTone, applyEvent, clearedSession, clearsAgentId, freshState, hydrate, isClearCommand, nextChatWidth, shouldNotify, withFolder } from "./state/session-rules";
 import type { AgentEvent, AppState, ChatMessage, Session } from "./state/types";
 import { shellCd, DEFAULT_TERMINAL_WIDTH } from "./terminal/rules";
 import { assignTurtle } from "./theme/turtles";
@@ -27,6 +27,8 @@ export function useSessions() {
   const closed = useRef(new Set<string>());
   const agentsRef = useRef<string[]>([]);
   const decisions = useRef(new Set<string>());
+  const attempts = useRef(new Map<string, number>());
+  const quiet = useRef(new Set<string>());
   stateRef.current = state;
   agentsRef.current = agents;
 
@@ -34,6 +36,7 @@ export function useSessions() {
     return openSubscription(() =>
       listen<AgentEvent>("agent-event", (event) => {
         const payload = event.payload;
+        if (quiet.current.has(payload._session_id)) return;
         const viewing = stateRef.current.activeSessionId;
         const focused = document.hasFocus();
         const next = applyEvent(stateRef.current, payload, viewing, focused);
@@ -168,7 +171,12 @@ export function useSessions() {
     void invoke("write_terminal", { sessionId: active.id, data: bytes }).catch(() => undefined);
   }
 
-  async function ensureRunning(session: Session): Promise<string> {
+  function stale(sessionId: string, attempt: number): boolean {
+    return (attempts.current.get(sessionId) ?? 0) !== attempt;
+  }
+
+  async function ensureRunning(session: Session, attempt: number): Promise<string> {
+    if (stale(session.id, attempt)) throw new Error("closed");
     if (session.status === "running") return session.agentSessionId ?? "";
     const existing = starts.current.get(session.id);
     if (existing) return existing;
@@ -179,10 +187,11 @@ export function useSessions() {
       agent: session.agent,
       agentSessionId: session.agentSessionId,
     }).then((agentSessionId) => {
-      if (closed.current.has(session.id)) {
+      if (closed.current.has(session.id) || stale(session.id, attempt)) {
         void invoke("close_session", { sessionId: session.id });
         throw new Error("closed");
       }
+      quiet.current.delete(session.id);
       const stored = agentSessionId || null;
       patch((current) => ({
         ...current,
@@ -199,20 +208,38 @@ export function useSessions() {
   }
 
   function send(sessionId: string, text: string): Promise<{ restore?: string }> {
+    if (isClearCommand(text)) return clearConversation(sessionId);
     const previous = chains.current.get(sessionId) ?? Promise.resolve();
     const next = previous.catch(() => undefined).then(() => deliver(sessionId, text));
     chains.current.set(sessionId, next);
     return next;
   }
 
+  function clearConversation(sessionId: string): Promise<{ restore?: string }> {
+    const session = stateRef.current.sessions.find((item) => item.id === sessionId);
+    if (!session) return Promise.resolve({});
+    attempts.current.set(sessionId, (attempts.current.get(sessionId) ?? 0) + 1);
+    quiet.current.add(sessionId);
+    patch((current) => ({
+      ...current,
+      sessions: current.sessions.map((item) => (item.id === sessionId ? clearedSession(item) : item)),
+    }));
+    const stop = invoke("close_session", { sessionId }).catch(() => undefined);
+    chains.current.set(sessionId, stop);
+    return stop.then(() => ({}));
+  }
+
   async function deliver(sessionId: string, text: string): Promise<{ restore?: string }> {
     const session = stateRef.current.sessions.find((item) => item.id === sessionId);
     if (!session) return {};
+    const attempt = attempts.current.get(sessionId) ?? 0;
     try {
-      await ensureRunning(session);
+      await ensureRunning(session, attempt);
     } catch (error) {
+      if (stale(sessionId, attempt)) return {};
       return failSend(sessionId, text, error, null, null);
     }
+    if (stale(sessionId, attempt)) return {};
     const user: ChatMessage = { id: crypto.randomUUID(), role: "user", text };
     const agent: ChatMessage = {
       id: crypto.randomUUID(),
@@ -232,6 +259,7 @@ export function useSessions() {
     }));
     try {
       const learned = await invoke<string | null>("send_message", { sessionId, text });
+      if (stale(sessionId, attempt)) return {};
       if (learned) {
         patch((current) => ({
           ...current,
@@ -242,6 +270,7 @@ export function useSessions() {
       }
       return {};
     } catch (error) {
+      if (stale(sessionId, attempt)) return {};
       return failSend(sessionId, text, error, user.id, agent.id);
     }
   }

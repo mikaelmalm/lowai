@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { isAtBottom } from "../chat/scroll";
+import { isClearCommand } from "../state/session-rules";
 import { modelsFor } from "../state/agents";
 import type { ChatWidth, Session, Theme } from "../state/types";
 import { sidebarModifier } from "../sidebar/rules";
@@ -146,7 +147,7 @@ export function ChatView({ session, onSend, onModel, onLink, onPermission, onTer
           onSubmit={(event) => {
             event.preventDefault();
             const text = draft.trim();
-            if (!text || busy) return;
+            if (!text || (busy && !isClearCommand(text))) return;
             setDraft("");
             setBusy(true);
             void onSend(text).then((result) => {

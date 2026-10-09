@@ -85,6 +85,14 @@ export function clearsAgentId(kind: "missing" | "other"): boolean {
   return kind === "missing";
 }
 
+export function isClearCommand(text: string): boolean {
+  return text.trim() === "/clear";
+}
+
+export function clearedSession(session: Session): Session {
+  return { ...session, messages: [], agentSessionId: null, status: "asleep", unread: false };
+}
+
 export function shouldNotify(windowFocused: boolean, viewingThisSession: boolean): boolean {
   return !(windowFocused && viewingThisSession);
 }
@@ -124,15 +132,19 @@ export function applyEvent(state: AppState, event: AgentEvent, viewingSessionId:
     }));
     next = { ...next, unread: viewing ? false : true, status: "running" };
   } else if (event.kind === "process_exited") {
-    const stderr = (event.stderr ?? "").trim();
-    const text = stderr ? `Session ended\n${stderr}` : "Session ended";
-    next = updateOpenAgent(session, (message) => ({ ...message, done: true }));
-    next = {
-      ...next,
-      status: "asleep",
-      unread: shouldNotify(windowFocused, viewingSessionId === session.id),
-      messages: [...next.messages, { id: `sys-${next.messages.length}`, role: "system", text }],
-    };
+    if (session.messages.length === 0) {
+      next = { ...session, status: "asleep" };
+    } else {
+      const stderr = (event.stderr ?? "").trim();
+      const text = stderr ? `Session ended\n${stderr}` : "Session ended";
+      next = updateOpenAgent(session, (message) => ({ ...message, done: true }));
+      next = {
+        ...next,
+        status: "asleep",
+        unread: shouldNotify(windowFocused, viewingSessionId === session.id),
+        messages: [...next.messages, { id: `sys-${next.messages.length}`, role: "system", text }],
+      };
+    }
   }
   if (next === session) return state;
   const sessions = state.sessions.slice();

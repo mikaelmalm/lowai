@@ -958,13 +958,15 @@ fn spawn_reader(
                 _ => break,
             }
         }
-        sessions.lock().await.remove(&app_id);
+        let owned = sessions.lock().await.remove(&app_id).is_some();
         let stderr = stderr_buf.lock().await.clone();
         let waiters: Vec<_> = pending.lock().await.drain().map(|(_, tx)| tx).collect();
         for tx in waiters {
             let _ = tx.send(Err(json!({"message": "session process exited"})));
         }
-        emit(HostEvent::ProcessExited { session_id: app_id, stderr });
+        if owned {
+            emit(HostEvent::ProcessExited { session_id: app_id, stderr });
+        }
     });
 }
 
