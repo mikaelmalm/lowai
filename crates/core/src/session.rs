@@ -334,8 +334,7 @@ impl GrokHost {
         } else {
             bridge.config.clone()
         };
-        let mut args = claude_args(model, resume, Some(config.as_path()));
-        args.push(text.to_string());
+        let args = claude_turn_args(model, resume, config.as_path(), text);
         let mut command = prepare_cli(&bin, cwd, &args);
         command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).kill_on_drop(true);
         let mut child = match command.spawn() {
@@ -847,7 +846,12 @@ pub fn agy_args(model: &str, cwd: &Path, conversation: Option<&str>) -> Vec<Stri
 }
 
 pub fn claude_args(model: &str, resume: Option<&str>, mcp_config: Option<&Path>) -> Vec<String> {
-    let mut args = vec![
+    let mut args = Vec::new();
+    if let Some(path) = mcp_config {
+        args.push("--mcp-config".into());
+        args.push(path.display().to_string());
+    }
+    args.extend([
         "-p".into(),
         "--output-format".into(),
         "stream-json".into(),
@@ -856,15 +860,18 @@ pub fn claude_args(model: &str, resume: Option<&str>, mcp_config: Option<&Path>)
         model.into(),
         "--permission-prompt-tool".into(),
         "mcp__lowai__approve_tool".into(),
-    ];
-    if let Some(path) = mcp_config {
-        args.push("--mcp-config".into());
-        args.push(path.display().to_string());
-    }
+    ]);
     if let Some(id) = resume {
         args.push("--resume".into());
         args.push(id.into());
     }
+    args
+}
+
+pub fn claude_turn_args(model: &str, resume: Option<&str>, mcp_config: &Path, prompt: &str) -> Vec<String> {
+    let mut args = claude_args(model, resume, Some(mcp_config));
+    args.push("--".into());
+    args.push(prompt.into());
     args
 }
 
@@ -1154,6 +1161,26 @@ mod tests {
         assert_eq!(resumed[resume_at + 1], "abc");
         let config_at = resumed.iter().position(|arg| arg == "--mcp-config").unwrap();
         assert_eq!(resumed[config_at + 1], "/tmp/aishell.json");
+    }
+
+    #[test]
+    fn claude_mcp_config_comes_before_print_and_the_prompt_is_after_a_dash_dash() {
+        // Claude's --mcp-config is variadic. A prompt after it is parsed as another
+        // config path: "Invalid MCP configuation: MCP config file was not found: …".
+        let args = claude_turn_args("sonnet", None, Path::new("/tmp/aishell.json"), "hello");
+        let config_at = args.iter().position(|arg| arg == "--mcp-config").unwrap();
+        let p_at = args.iter().position(|arg| arg == "-p").unwrap();
+        let sep_at = args.iter().position(|arg| arg == "--").unwrap();
+        assert!(config_at < p_at);
+        assert_eq!(args[config_at + 1], "/tmp/aishell.json");
+        assert!(p_at < sep_at);
+        assert_eq!(args[sep_at + 1], "hello");
+        assert_eq!(sep_at, args.len() - 2);
+        let resumed = claude_turn_args("opus", Some("abc"), Path::new("/tmp/aishell.json"), "next");
+        let resume_at = resumed.iter().position(|arg| arg == "--resume").unwrap();
+        let resumed_sep = resumed.iter().position(|arg| arg == "--").unwrap();
+        assert!(resume_at < resumed_sep);
+        assert_eq!(resumed[resume_at + 1], "abc");
     }
 
     #[tokio::test]
