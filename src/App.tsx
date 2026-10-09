@@ -6,6 +6,7 @@ import { Sidebar } from "./components/Sidebar";
 import { TitleBar } from "./components/TitleBar";
 import { TerminalPane } from "./components/TerminalPane";
 import { useSessions } from "./useSessions";
+import { nextProjectName } from "./state/projects";
 import { clampSidebarWidth, sidebarModifier, sidebarShortcut } from "./sidebar/rules";
 import { clampTerminalWidth, DEFAULT_TERMINAL_WIDTH } from "./terminal/rules";
 import "./theme/theme.css";
@@ -100,6 +101,7 @@ export function App() {
           style={{ width: sidebarWidth }}
         state={api.state}
         onProject={api.selectProject}
+        onNewProject={() => api.createProject(nextProjectName(api.state.projects))}
         onRenameProject={api.renameProject}
         onDeleteProject={api.deleteProject}
         onSelect={api.selectSession}

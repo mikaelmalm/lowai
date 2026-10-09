@@ -128,7 +128,7 @@ html.maximized .window { border-radius: 0; border-color: transparent; }
 .project-name, .session-row { text-align: left; }
 .project-menu { display: none; flex-direction: column; gap: 4px; }
 .project-menu.open { display: flex; }
-.project-menu button.active { background: #2c343d; }
+.project-menu button.active { background: var(--control-hover); }
 .session-actions label { display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 0.85rem; }
 .session-actions select, .session-actions input { background: var(--control); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
 .session-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -288,7 +288,8 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height:
 .diagram-block { position: relative; margin: 8px 0; background: var(--raised); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
 .diagram-block .control { position: absolute; right: 8px; top: 8px; }
 .diagram-frame { overflow: auto; padding-top: 28px; }
-.diagram-frame svg { max-width: 100%; height: auto; }
+.diagram-frame svg { max-width: 100%; height: auto; display: block; }
+.diagram-block > pre { overflow: auto; background: var(--code); color: var(--code-ink); padding: 12px; border-radius: 8px; margin: 0; padding-top: 36px; }
 .diagram-block details { margin-top: 8px; }
 .diagram-block summary { cursor: pointer; color: var(--muted); }
 .diagram-block details pre { overflow: auto; margin: 8px 0 0; background: var(--code); color: var(--code-ink); padding: 12px; border-radius: 8px; }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { drawDiagram } from "../chat/diagram";
+import { drawDiagram, keepDrawnSvg } from "../chat/diagram";
 import type { Theme } from "../state/types";
 
 export function MermaidBlock({ source, theme }: { source: string; theme: Theme }) {
@@ -8,13 +8,15 @@ export function MermaidBlock({ source, theme }: { source: string; theme: Theme }
 
   useEffect(() => {
     let cancelled = false;
-    const id = `mmd${crypto.randomUUID().replaceAll("-", "")}`;
-    setSvg(null);
-    void drawDiagram(source, id, theme).then((next) => {
-      if (!cancelled) setSvg(next);
-    });
+    const handle = window.setTimeout(() => {
+      const id = `mmd${crypto.randomUUID().replaceAll("-", "")}`;
+      void drawDiagram(source, id, theme).then((next) => {
+        if (!cancelled) setSvg((current) => keepDrawnSvg(current, next));
+      });
+    }, 160);
     return () => {
       cancelled = true;
+      window.clearTimeout(handle);
     };
   }, [source, theme]);
 
@@ -25,23 +27,20 @@ export function MermaidBlock({ source, theme }: { source: string; theme: Theme }
     });
   }
 
-  if (!svg) {
-    return (
-      <div className="code-block">
-        <button type="button" className="control" onClick={copy}>{copied ? "Copied" : "Copy"}</button>
-        <pre><code>{source}</code></pre>
-      </div>
-    );
-  }
-
   return (
     <figure className="diagram-block">
       <button type="button" className="control" onClick={copy}>{copied ? "Copied" : "Copy"}</button>
-      <div className="diagram-frame" dangerouslySetInnerHTML={{ __html: svg }} />
-      <details>
-        <summary>Source</summary>
+      {svg ? (
+        <div className="diagram-frame" dangerouslySetInnerHTML={{ __html: svg }} />
+      ) : (
         <pre><code>{source}</code></pre>
-      </details>
+      )}
+      {svg ? (
+        <details>
+          <summary>Source</summary>
+          <pre><code>{source}</code></pre>
+        </details>
+      ) : null}
     </figure>
   );
 }

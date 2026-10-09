@@ -1,4 +1,4 @@
-import { isValidElement, useState, type ReactNode } from "react";
+import { isValidElement, useMemo, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
@@ -9,32 +9,33 @@ import { MermaidBlock } from "./MermaidBlock";
 type Props = { text: string; theme: Theme; onLink: (url: string) => void };
 
 export function MarkdownView({ text, theme, onLink }: Props) {
+  const components = useMemo(() => ({
+    a: ({ href, children }: { href?: string; children?: ReactNode }) => {
+      const url = href ?? "";
+      if (!isSafeLink(url)) return <span>{children}</span>;
+      return (
+        <a href={url} onClick={(event) => { event.preventDefault(); onLink(url); }}>
+          {children}
+        </a>
+      );
+    },
+    img: ({ alt, src }: { alt?: string; src?: string }) => (
+      <a href={src} onClick={(event) => { event.preventDefault(); if (src && isSafeLink(src)) onLink(src); }}>
+        {alt || src || "image"}
+      </a>
+    ),
+    code: ({ className, children }: { className?: string; children?: ReactNode }) => {
+      const source = textContent(children).replace(/\n$/, "");
+      if (isMermaid(className)) return <MermaidBlock source={source} theme={theme} />;
+      if (!className) return <code>{children}</code>;
+      return <CodeBlock className={className} source={source}>{children}</CodeBlock>;
+    },
+  }), [theme, onLink]);
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       rehypePlugins={[rehypeHighlight]}
-      components={{
-        a: ({ href, children }) => {
-          const url = href ?? "";
-          if (!isSafeLink(url)) return <span>{children}</span>;
-          return (
-            <a href={url} onClick={(event) => { event.preventDefault(); onLink(url); }}>
-              {children}
-            </a>
-          );
-        },
-        img: ({ alt, src }) => (
-          <a href={src} onClick={(event) => { event.preventDefault(); if (src && isSafeLink(src)) onLink(src); }}>
-            {alt || src || "image"}
-          </a>
-        ),
-        code: ({ className, children }) => {
-          const source = textContent(children).replace(/\n$/, "");
-          if (isMermaid(className)) return <MermaidBlock source={source} theme={theme} />;
-          if (!className) return <code>{children}</code>;
-          return <CodeBlock className={className} source={source}>{children}</CodeBlock>;
-        },
-      }}
+      components={components}
     >
       {text}
     </ReactMarkdown>

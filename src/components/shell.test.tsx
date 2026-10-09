@@ -29,6 +29,7 @@ describe("sidebar", () => {
       <Sidebar
         state={state}
         onProject={() => undefined}
+        onNewProject={() => undefined}
         onRenameProject={() => undefined}
         onDeleteProject={() => undefined}
         onSelect={() => undefined}
@@ -41,7 +42,7 @@ describe("sidebar", () => {
         onToggleTheme={() => undefined}
       />,
     );
-    expect(html).not.toContain("New project");
+    expect(html).toContain("New project");
     expect(html).not.toContain("folder path");
     expect(html).toContain("unify-mono");
     expect(html).toContain("session-tag");
@@ -54,6 +55,32 @@ describe("sidebar", () => {
     const tagAt = html.indexOf("session-tag");
     expect(nameAt).toBeGreaterThan(-1);
     expect(tagAt).toBeGreaterThan(nameAt);
+    expect(html).not.toContain(">Remove<");
+  });
+
+  it("offers Remove in the project menu when the current project is empty and not last", () => {
+    const state = freshState();
+    state.projects = [{ id: "a", name: "A" }, { id: "b", name: "B" }];
+    state.activeProjectId = "a";
+    const html = renderToStaticMarkup(
+      <Sidebar
+        state={state}
+        onProject={() => undefined}
+        onNewProject={() => undefined}
+        onRenameProject={() => undefined}
+        onDeleteProject={() => undefined}
+        onSelect={() => undefined}
+        onRename={() => undefined}
+        onClose={() => undefined}
+        agents={["claude"]}
+        onAgent={() => undefined}
+        onNewSession={() => undefined}
+        onBrowse={() => undefined}
+        onToggleTheme={() => undefined}
+      />,
+    );
+    expect(html).toContain("New project");
+    expect(html).toContain(">Remove<");
   });
 });
 

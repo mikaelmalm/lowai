@@ -5,6 +5,10 @@ export function isMermaid(className: string | undefined): boolean {
   return className?.split(/\s+/).includes("language-mermaid") ?? false;
 }
 
+export function keepDrawnSvg(current: string | null, incoming: string | null): string | null {
+  return incoming ?? current;
+}
+
 let loading: Promise<typeof mermaid> | null = null;
 
 function load(): Promise<typeof mermaid> {

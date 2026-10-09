@@ -8,6 +8,7 @@ type Props = {
   style?: CSSProperties;
   state: AppState;
   onProject: (id: string) => void;
+  onNewProject: () => void;
   onRenameProject: (id: string, name: string) => void;
   onDeleteProject: (id: string) => void;
   onSelect: (id: string) => void;
@@ -24,6 +25,7 @@ export function Sidebar(props: Props) {
   const project = props.state.projects.find((item) => item.id === props.state.activeProjectId) ?? props.state.projects[0];
   const sessions = props.state.sessions.filter((session) => session.projectId === project.id);
   const [editingProject, setEditingProject] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const sessionCount = sessions.length;
   const selectedAgent = installedAgent(props.state.selectedAgent, props.agents);
@@ -41,21 +43,28 @@ export function Sidebar(props: Props) {
             }}
           />
         ) : (
-          <button type="button" className="project-name" title="Double-click to rename" onDoubleClick={() => setEditingProject(true)} onClick={(event) => {
-            const menu = event.currentTarget.nextElementSibling;
-            menu?.classList.toggle("open");
-          }}>
+          <button type="button" className="project-name" title="Double-click to rename" onDoubleClick={() => setEditingProject(true)} onClick={() => setMenuOpen((open) => !open)}>
             {project.name} ▾
           </button>
         )}
-        <div className="project-menu">
+        <div className={menuOpen ? "project-menu open" : "project-menu"}>
           {props.state.projects.map((item) => (
-            <button type="button" key={item.id} className={item.id === project.id ? "active" : undefined} onClick={() => props.onProject(item.id)}>{item.name}</button>
+            <button type="button" key={item.id} className={item.id === project.id ? "active" : undefined} onClick={() => {
+              props.onProject(item.id);
+              setMenuOpen(false);
+            }}>{item.name}</button>
           ))}
+          <button type="button" onClick={() => {
+            props.onNewProject();
+            setMenuOpen(false);
+          }}>New project</button>
+          {canDeleteProject(props.state.projects, project.id, sessionCount) ? (
+            <button type="button" onClick={() => {
+              props.onDeleteProject(project.id);
+              setMenuOpen(false);
+            }}>Remove</button>
+          ) : null}
         </div>
-        {canDeleteProject(props.state.projects, project.id, sessionCount) ? (
-          <button type="button" onClick={() => props.onDeleteProject(project.id)}>Delete</button>
-        ) : null}
       </div>
       <div className="session-scroll">
         {sessions.length === 0 ? <p className="session-empty">No sessions yet.</p> : (
