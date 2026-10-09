@@ -247,6 +247,11 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height:
 .chat-title span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .transcript { flex: 1; min-height: 0; overflow: auto; padding: 16px 16px 40px; overflow-anchor: none; }
 .transcript-body { display: flex; flex-direction: column; gap: 16px; }
+.window[data-chat-width="column"] .transcript-body,
+.window[data-chat-width="column"] .composer {
+  width: min(100%, 75rem);
+  margin-inline: auto;
+}
 .user-bubble {
   align-self: flex-end;
   max-width: 70%;
@@ -272,12 +277,40 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height:
 .permission-card { display: flex; flex-direction: column; gap: 8px; background: var(--inset); border-radius: 8px; padding: 8px; margin: 6px 0; }
 .permission-card code { white-space: pre-wrap; }
 .permission-card .actions { display: flex; gap: 8px; }
-.permission-card button { border: 0; border-radius: 8px; padding: 6px 12px; color: white; }
+.permission-card .actions button { border: 0; border-radius: 8px; padding: 6px 12px; color: white; }
 .permission-card button.allow { background: #2f6f4e; }
 .permission-card button.allow:hover { background: #387a58; }
 .permission-card button.deny { background: #6f3a32; }
 .permission-card button.deny:hover { background: #7d453c; }
-.permission-card button:disabled { opacity: 0.55; }
+.permission-card .actions button:disabled { opacity: 0.55; }
+.permission-card.questions { gap: 12px; padding: 12px; }
+.permission-question { margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.permission-question legend { padding: 0; color: var(--muted); font-size: 0.85rem; }
+.permission-question p { margin: 0; }
+.permission-options { display: flex; flex-direction: column; gap: 6px; }
+.permission-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--ink);
+}
+.permission-option:hover { background: var(--control); }
+.permission-option[aria-pressed="true"] { border-color: var(--turtle); box-shadow: 0 0 0 1px var(--turtle); }
+.permission-option span { color: var(--muted); font-size: 0.85rem; }
+.permission-other { display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 0.85rem; }
+.permission-other input {
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--ink);
+}
 .tool-row { display: flex; gap: 8px; align-items: center; background: var(--inset); border-radius: 8px; padding: 6px 8px; margin: 6px 0; }
 .tool-row.spinning code { opacity: 0.7; }
 .system-card { background: var(--note); border-radius: 10px; padding: 10px 12px; white-space: pre-wrap; }

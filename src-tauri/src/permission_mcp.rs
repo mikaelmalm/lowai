@@ -20,8 +20,9 @@ pub fn run_permission_mcp() {
                 McpAction::Ignore => {}
                 McpAction::Reply(value) => write_frame(&mut stdout, &value),
                 McpAction::Ask { rpc_id, request_id, name, input } => {
-                    let allow = ask_host(&sock, &request_id, &name, &input);
-                    write_frame(&mut stdout, &permission_reply(&rpc_id, allow, &input));
+                    let reply = ask_host(&sock, &request_id, &name, &input);
+                    let used = reply.input.as_ref().unwrap_or(&input);
+                    write_frame(&mut stdout, &permission_reply(&rpc_id, reply.allow, used));
                 }
             }
         }
@@ -33,21 +34,22 @@ fn write_frame(stdout: &mut impl Write, value: &Value) {
     let _ = stdout.flush();
 }
 
-fn ask_host(addr: &str, request_id: &str, name: &str, input: &Value) -> bool {
+fn ask_host(addr: &str, request_id: &str, name: &str, input: &Value) -> ai_shell_core::PermissionReply {
+    let denied = ai_shell_core::PermissionReply { allow: false, input: None };
     if addr.is_empty() {
-        return false;
+        return denied;
     }
     let mut stream = match connect_host(addr) {
         Ok(stream) => stream,
-        Err(_) => return false,
+        Err(_) => return denied,
     };
     let line = serde_json::json!({"requestId": request_id, "name": name, "input": input}).to_string();
     if writeln!(stream, "{line}").is_err() || stream.flush().is_err() {
-        return false;
+        return denied;
     }
     let mut response = String::new();
     if BufReader::new(&mut stream).read_line(&mut response).is_err() {
-        return false;
+        return denied;
     }
     parse_permission_reply(&response)
 }

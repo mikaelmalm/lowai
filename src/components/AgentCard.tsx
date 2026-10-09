@@ -30,7 +30,7 @@ export function AgentCard({
   folder: string;
   theme: Theme;
   onLink: (url: string) => void;
-  onPermission: (requestId: string, allow: boolean) => void;
+  onPermission: (requestId: string, allow: boolean, input?: unknown) => void;
 }) {
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -60,7 +60,7 @@ export function AgentCard({
               name={block.name}
               input={block.input}
               answered={block.answered}
-              onAnswer={(allow) => onPermission(block.id, allow)}
+              onAnswer={(allow, input) => onPermission(block.id, allow, input)}
             />
           );
         }

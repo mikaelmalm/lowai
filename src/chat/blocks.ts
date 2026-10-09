@@ -51,10 +51,10 @@ export function reduceBlocks(blocks: AgentBlock[], event: AgentEvent): AgentBloc
   return blocks;
 }
 
-export function answerBlock(blocks: AgentBlock[], requestId: string, allow: boolean): AgentBlock[] {
+export function answerBlock(blocks: AgentBlock[], requestId: string, allow: boolean, input?: unknown): AgentBlock[] {
   return blocks.map((block) =>
     block.type === "permission" && block.id === requestId && block.answered == null
-      ? { ...block, answered: allow ? "allow" : "deny" }
+      ? { ...block, answered: allow ? "allow" : "deny", input: input ?? block.input }
       : block,
   );
 }

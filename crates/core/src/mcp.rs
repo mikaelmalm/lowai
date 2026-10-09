@@ -106,11 +106,18 @@ pub fn permission_reply(rpc_id: &Value, allow: bool, input: &Value) -> Value {
     })
 }
 
-pub fn parse_permission_reply(line: &str) -> bool {
-    serde_json::from_str::<Value>(line)
-        .ok()
-        .and_then(|value| value.get("allow").and_then(Value::as_bool))
-        .unwrap_or(false)
+#[derive(Debug, Clone, PartialEq)]
+pub struct PermissionReply {
+    pub allow: bool,
+    pub input: Option<Value>,
+}
+
+pub fn parse_permission_reply(line: &str) -> PermissionReply {
+    let value = serde_json::from_str::<Value>(line.trim()).ok();
+    PermissionReply {
+        allow: value.as_ref().and_then(|item| item.get("allow").and_then(Value::as_bool)).unwrap_or(false),
+        input: value.and_then(|item| item.get("input").cloned()).filter(|item| !item.is_null()),
+    }
 }
 
 fn permission_fields(args: &Value, fallback_seq: u64) -> (String, String, Value) {
@@ -209,8 +216,13 @@ mod tests {
         let decision: Value = serde_json::from_str(text).unwrap();
         assert_eq!(decision["behavior"], "allow");
         assert_eq!(decision["updatedInput"]["command"], "ls");
-        assert!(!parse_permission_reply("{\"allow\":false}\n"));
-        assert!(parse_permission_reply("{\"allow\":true}"));
+        assert!(!parse_permission_reply("{\"allow\":false}\n").allow);
+        assert!(parse_permission_reply("{\"allow\":true}").allow);
+        let with_answers = parse_permission_reply(
+            r#"{"allow":true,"input":{"questions":[],"answers":{"How?":"Summary"}}}"#,
+        );
+        assert!(with_answers.allow);
+        assert_eq!(with_answers.input.unwrap()["answers"]["How?"], "Summary");
     }
 
     #[test]

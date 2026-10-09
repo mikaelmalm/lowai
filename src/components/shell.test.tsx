@@ -39,7 +39,6 @@ describe("sidebar", () => {
         onAgent={() => undefined}
         onNewSession={() => undefined}
         onBrowse={() => undefined}
-        onToggleTheme={() => undefined}
       />,
     );
     expect(html).toContain("New project");
@@ -50,7 +49,7 @@ describe("sidebar", () => {
     expect(html).toContain("New session");
     expect(html).toContain('<option value="claude" selected="">claude</option>');
     expect(html).toContain("Browse");
-    expect(html).toContain("Light mode");
+    expect(html).not.toContain("Light mode");
     const nameAt = html.indexOf("session-name");
     const tagAt = html.indexOf("session-tag");
     expect(nameAt).toBeGreaterThan(-1);
@@ -76,7 +75,6 @@ describe("sidebar", () => {
         onAgent={() => undefined}
         onNewSession={() => undefined}
         onBrowse={() => undefined}
-        onToggleTheme={() => undefined}
       />,
     );
     expect(html).toContain("New project");
@@ -95,9 +93,12 @@ describe("chat header and composer", () => {
         onPermission={() => undefined}
         onTerminal={() => undefined}
         onSidebar={() => undefined}
+        onToggleTheme={() => undefined}
+        onToggleWidth={() => undefined}
         sidebarOpen
         terminalOpen={false}
         theme="dark"
+        chatWidth="column"
       />,
     );
     const sidebarAt = html.indexOf('aria-label="Sidebar"');
@@ -106,6 +107,8 @@ describe("chat header and composer", () => {
     expect(sidebarAt).toBeGreaterThan(-1);
     expect(titleAt).toBeGreaterThan(sidebarAt);
     expect(terminalAt).toBeGreaterThan(titleAt);
+    expect(html).toContain('aria-label="Light mode"');
+    expect(html).toContain('aria-label="Full width"');
     expect(html).toContain('class="composer-dock"');
     expect(html.indexOf('class="composer"')).toBeGreaterThan(html.indexOf('class="composer-dock"'));
     expect(html).toContain('class="composer-field"');

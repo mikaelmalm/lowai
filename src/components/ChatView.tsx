@@ -1,28 +1,30 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { isAtBottom } from "../chat/scroll";
 import { modelsFor } from "../state/agents";
-import type { Session } from "../state/types";
+import type { ChatWidth, Session, Theme } from "../state/types";
 import { sidebarModifier } from "../sidebar/rules";
-import type { Theme } from "../state/types";
 import { readableOn, TURTLES } from "../theme/turtles";
 import { AgentCard } from "./AgentCard";
 import { CardErrorBoundary } from "./CardErrorBoundary";
-import { SidebarIcon, TerminalIcon } from "./icons";
+import { ColumnWidthIcon, FullWidthIcon, MoonIcon, SidebarIcon, SunIcon, TerminalIcon } from "./icons";
 
 type Props = {
   session: Session;
   onSend: (text: string) => Promise<{ restore?: string }>;
   onModel: (model: string) => void;
   onLink: (url: string) => void;
-  onPermission: (requestId: string, allow: boolean) => void;
+  onPermission: (requestId: string, allow: boolean, input?: unknown) => void;
   onTerminal: () => void;
   onSidebar: () => void;
+  onToggleTheme: () => void;
+  onToggleWidth: () => void;
   sidebarOpen: boolean;
   terminalOpen: boolean;
   theme: Theme;
+  chatWidth: ChatWidth;
 };
 
-export function ChatView({ session, onSend, onModel, onLink, onPermission, onTerminal, onSidebar, sidebarOpen, terminalOpen, theme }: Props) {
+export function ChatView({ session, onSend, onModel, onLink, onPermission, onTerminal, onSidebar, onToggleTheme, onToggleWidth, sidebarOpen, terminalOpen, theme, chatWidth }: Props) {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
@@ -90,6 +92,25 @@ export function ChatView({ session, onSend, onModel, onLink, onPermission, onTer
               <option key={model} value={model}>{model}</option>
             ))}
           </select>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label={theme === "light" ? "Dark mode" : "Light mode"}
+            title={theme === "light" ? "Dark mode" : "Light mode"}
+            onClick={onToggleTheme}
+          >
+            {theme === "light" ? <MoonIcon /> : <SunIcon />}
+          </button>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label={chatWidth === "full" ? "Column width" : "Full width"}
+            aria-pressed={chatWidth === "full"}
+            title={chatWidth === "full" ? "Column width" : "Full width"}
+            onClick={onToggleWidth}
+          >
+            {chatWidth === "full" ? <ColumnWidthIcon /> : <FullWidthIcon />}
+          </button>
           <button
             type="button"
             className="icon-button"

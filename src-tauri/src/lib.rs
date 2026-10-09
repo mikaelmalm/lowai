@@ -8,6 +8,7 @@ use ai_shell_core::{
 
 pub use permission_mcp::run_permission_mcp;
 use serde::Serialize;
+use serde_json::Value;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -91,8 +92,14 @@ fn available_agents() -> Vec<String> {
 }
 
 #[tauri::command]
-async fn answer_permission(state: State<'_, AppState>, session_id: String, request_id: String, allow: bool) -> Result<(), ()> {
-    state.host.answer_permission(&session_id, &request_id, allow).await;
+async fn answer_permission(
+    state: State<'_, AppState>,
+    session_id: String,
+    request_id: String,
+    allow: bool,
+    input: Option<Value>,
+) -> Result<(), ()> {
+    state.host.answer_permission(&session_id, &request_id, allow, input).await;
     Ok(())
 }
 

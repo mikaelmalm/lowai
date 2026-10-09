@@ -93,7 +93,7 @@ export function App() {
   const sidebarWidth = clampSidebarWidth(api.state.sidebarWidth, windowWidth, paneVisible ? width : 0);
 
   return (
-    <div className="window" data-theme={api.state.theme}>
+    <div className="window" data-theme={api.state.theme} data-chat-width={api.state.chatWidth}>
     <TitleBar />
     <div className="app" ref={appRef}>
       {api.state.sidebarHidden ? null : (
@@ -118,7 +118,6 @@ export function App() {
         onAgent={api.setAgent}
         onNewSession={() => api.addSession(session?.folder || ".")}
         onBrowse={() => { void api.browse(); }}
-        onToggleTheme={api.toggleTheme}
         />
       )}
       {api.state.sidebarHidden ? null : (
@@ -158,12 +157,15 @@ export function App() {
                 onSend={(text) => api.send(session.id, text)}
                 onModel={(model) => { void api.changeModel(session.id, model); }}
                 onLink={api.openLink}
-                onPermission={(requestId, allow) => api.answerPermission(session.id, requestId, allow)}
+                onPermission={(requestId, allow, input) => api.answerPermission(session.id, requestId, allow, input)}
                 onTerminal={() => (paneVisible ? hideTerminal(session.id) : openTerminal(session.id))}
                 onSidebar={api.toggleSidebar}
+                onToggleTheme={api.toggleTheme}
+                onToggleWidth={api.toggleChatWidth}
                 sidebarOpen={!api.state.sidebarHidden}
                 terminalOpen={paneVisible}
                 theme={api.state.theme}
+                chatWidth={api.state.chatWidth}
               />
             </div>
             {paneVisible ? (

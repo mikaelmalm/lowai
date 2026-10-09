@@ -72,8 +72,14 @@ enum SessionKind {
     Claude { cwd: PathBuf, model: String, child: Option<Child> },
 }
 
+#[derive(Debug, Clone)]
+struct PermissionAnswer {
+    allow: bool,
+    input: Option<Value>,
+}
+
 struct PermissionBoard {
-    waiters: Mutex<HashMap<String, oneshot::Sender<bool>>>,
+    waiters: Mutex<HashMap<String, oneshot::Sender<PermissionAnswer>>>,
 }
 
 impl PermissionBoard {
@@ -81,16 +87,16 @@ impl PermissionBoard {
         Self { waiters: Mutex::new(HashMap::new()) }
     }
 
-    async fn register(&self, key: String) -> oneshot::Receiver<bool> {
+    async fn register(&self, key: String) -> oneshot::Receiver<PermissionAnswer> {
         let (tx, rx) = oneshot::channel();
         self.waiters.lock().await.insert(key, tx);
         rx
     }
 
-    async fn answer(&self, key: &str, allow: bool) -> bool {
+    async fn answer(&self, key: &str, answer: PermissionAnswer) -> bool {
         match self.waiters.lock().await.remove(key) {
             Some(tx) => {
-                let _ = tx.send(allow);
+                let _ = tx.send(answer);
                 true
             }
             None => false,
@@ -108,7 +114,7 @@ impl PermissionBoard {
             .collect();
         let count = keys.len();
         for key in keys {
-            let _ = self.answer(&key, false).await;
+            let _ = self.answer(&key, PermissionAnswer { allow: false, input: None }).await;
         }
         count
     }
@@ -116,7 +122,7 @@ impl PermissionBoard {
     fn deny_all_blocking(&self) {
         let mut guard = self.waiters.blocking_lock();
         for (_, tx) in guard.drain() {
-            let _ = tx.send(false);
+            let _ = tx.send(PermissionAnswer { allow: false, input: None });
         }
     }
 }
@@ -138,8 +144,8 @@ impl GrokHost {
         }
     }
 
-    pub async fn answer_permission(&self, app_session_id: &str, request_id: &str, allow: bool) -> bool {
-        self.permissions.answer(&format!("{app_session_id}:{request_id}"), allow).await
+    pub async fn answer_permission(&self, app_session_id: &str, request_id: &str, allow: bool, input: Option<Value>) -> bool {
+        self.permissions.answer(&format!("{app_session_id}:{request_id}"), PermissionAnswer { allow, input }).await
     }
 
     pub async fn start(&self, req: StartRequest) -> Result<String, SessionError> {
@@ -812,8 +818,8 @@ async fn serve_permission<S>(
         name,
         input,
     });
-    let allow = rx.await.unwrap_or(false);
-    let reply = format!("{}\n", json!({"allow": allow}));
+    let answer = rx.await.unwrap_or(PermissionAnswer { allow: false, input: None });
+    let reply = format!("{}\n", json!({"allow": answer.allow, "input": answer.input}));
     let _ = write.write_all(reply.as_bytes()).await;
 }
 
@@ -982,8 +988,8 @@ async fn dispatch_line(
                 name: request.name.clone(),
                 input: request.input.clone(),
             });
-            let allow = rx.await.unwrap_or(false);
-            let result = permission_decision(allow, request.allow_option.as_deref(), request.deny_option.as_deref());
+            let answer = rx.await.unwrap_or(PermissionAnswer { allow: false, input: None });
+            let result = permission_decision(answer.allow, request.allow_option.as_deref(), request.deny_option.as_deref());
             let _ = outbound.send(
                 serde_json::to_string(&json!({"jsonrpc": "2.0", "id": request.id, "result": result})).unwrap_or_default(),
             );
@@ -1187,11 +1193,11 @@ mod tests {
     async fn first_permission_answer_is_delivered_once() {
         let board = PermissionBoard::new();
         let rx = board.register("s:1".into()).await;
-        assert!(board.answer("s:1", true).await);
-        assert!(!board.answer("s:1", false).await);
-        assert_eq!(rx.await.ok(), Some(true));
+        assert!(board.answer("s:1", PermissionAnswer { allow: true, input: None }).await);
+        assert!(!board.answer("s:1", PermissionAnswer { allow: false, input: None }).await);
+        assert_eq!(rx.await.ok().map(|answer| answer.allow), Some(true));
         board.register("s:2".into()).await;
         board.deny_prefix("s:").await;
-        assert!(!board.answer("s:2", true).await);
+        assert!(!board.answer("s:2", PermissionAnswer { allow: true, input: None }).await);
     }
 }

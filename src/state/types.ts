@@ -39,6 +39,7 @@ export type Session = {
 export type Project = { id: string; name: string };
 
 export type Theme = "dark" | "light";
+export type ChatWidth = "column" | "full";
 
 export type AppState = {
   projects: Project[];
@@ -49,6 +50,7 @@ export type AppState = {
   sidebarHidden: boolean;
   selectedAgent: AgentId;
   theme: Theme;
+  chatWidth: ChatWidth;
 };
 
 export type AgentEvent = {

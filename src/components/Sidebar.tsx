@@ -18,7 +18,6 @@ type Props = {
   onAgent: (agent: AgentId) => void;
   onNewSession: () => void;
   onBrowse: () => void;
-  onToggleTheme: () => void;
 };
 
 export function Sidebar(props: Props) {
@@ -116,7 +115,6 @@ export function Sidebar(props: Props) {
         </label>
         <button type="button" onClick={props.onNewSession}>New session</button>
         <button type="button" onClick={props.onBrowse}>Browse…</button>
-        <button type="button" onClick={props.onToggleTheme}>{props.state.theme === "light" ? "Dark mode" : "Light mode"}</button>
       </div>
     </aside>
   );

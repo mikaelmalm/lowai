@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SIDEBAR_WIDTH } from "../sidebar/rules";
 import { DEFAULT_TERMINAL_WIDTH } from "../terminal/rules";
-import { alertTone, applyEvent, clearsAgentId, finishForLoad, folderName, hydrate, shouldNotify, withFolder } from "./session-rules";
+import { alertTone, applyEvent, clearsAgentId, finishForLoad, folderName, hydrate, nextChatWidth, shouldNotify, withFolder } from "./session-rules";
 import type { Session } from "./types";
 
 const session = (partial: Partial<Session> = {}): Session => ({
@@ -86,6 +86,22 @@ describe("session rules", () => {
     expect(light.theme).toBe("light");
     const invalid = hydrate({ ...missing, theme: "sepia" }).state;
     expect(invalid.theme).toBe("dark");
+  });
+
+  it("loads chat width and defaults to a column", () => {
+    const missing = hydrate({
+      projects: [{ id: "p", name: "Personal" }],
+      activeProjectId: "p",
+      activeSessionId: null,
+      sessions: [],
+    }).state;
+    expect(missing.chatWidth).toBe("column");
+    expect(nextChatWidth("column")).toBe("full");
+    expect(nextChatWidth("full")).toBe("column");
+    const full = hydrate({ ...missing, chatWidth: "full" }).state;
+    expect(full.chatWidth).toBe("full");
+    const invalid = hydrate({ ...missing, chatWidth: "narrow" }).state;
+    expect(invalid.chatWidth).toBe("column");
   });
 
   it("loads a session with no agent as grok", () => {

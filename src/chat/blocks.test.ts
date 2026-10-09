@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { reduceBlocks } from "./blocks";
+import { answerBlock, reduceBlocks } from "./blocks";
 import type { AgentBlock, AgentEvent } from "../state/types";
 
 const event = (partial: Partial<AgentEvent> & Pick<AgentEvent, "kind">): AgentEvent => ({
@@ -38,6 +38,18 @@ describe("reduceBlocks", () => {
     const again = reduceBlocks(first, event);
     expect(again).toHaveLength(1);
     expect(again[0]).toMatchObject({ type: "permission", id: "p1", name: "Bash", answered: null });
+  });
+
+  it("keeps the chosen answers on a permission block", () => {
+    const pending = reduceBlocks([], {
+      _session_id: "s",
+      kind: "permission",
+      requestId: "p1",
+      name: "AskUserQuestion",
+      input: { questions: [] },
+    });
+    const next = answerBlock(pending, "p1", true, { questions: [], answers: { "How?": "Summary" } });
+    expect(next[0]).toMatchObject({ answered: "allow", input: { answers: { "How?": "Summary" } } });
   });
 
   it("updates one tool row when a later start repeats the id", () => {

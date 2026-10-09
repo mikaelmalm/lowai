@@ -8,7 +8,7 @@ import { playTone } from "./lib/sound";
 import { openSubscription } from "./lib/subscribe";
 import { answerBlock } from "./chat/blocks";
 import { defaultModel, installedAgent, type AgentId } from "./state/agents";
-import { alertTone, applyEvent, clearsAgentId, freshState, hydrate, shouldNotify, withFolder } from "./state/session-rules";
+import { alertTone, applyEvent, clearsAgentId, freshState, hydrate, nextChatWidth, shouldNotify, withFolder } from "./state/session-rules";
 import type { AgentEvent, AppState, ChatMessage, Session } from "./state/types";
 import { shellCd, DEFAULT_TERMINAL_WIDTH } from "./terminal/rules";
 import { assignTurtle } from "./theme/turtles";
@@ -299,7 +299,7 @@ export function useSessions() {
     }
   }
 
-  function answerPermission(sessionId: string, requestId: string, allow: boolean) {
+  function answerPermission(sessionId: string, requestId: string, allow: boolean, input?: unknown) {
     const key = `${sessionId}:${requestId}`;
     if (decisions.current.has(key)) return;
     decisions.current.add(key);
@@ -311,13 +311,13 @@ export function useSessions() {
           ...item,
           messages: item.messages.map((message) =>
             message.role === "agent"
-              ? { ...message, blocks: answerBlock(message.blocks, requestId, allow) }
+              ? { ...message, blocks: answerBlock(message.blocks, requestId, allow, input) }
               : message,
           ),
         };
       }),
     }));
-    void invoke("answer_permission", { sessionId, requestId, allow });
+    void invoke("answer_permission", { sessionId, requestId, allow, input: input ?? null });
   }
 
   async function closeSession(sessionId: string) {
@@ -382,6 +382,7 @@ export function useSessions() {
     setSidebarWidth: (width: number) => patch((current) => ({ ...current, sidebarWidth: width })),
     toggleSidebar: () => patch((current) => ({ ...current, sidebarHidden: !current.sidebarHidden })),
     toggleTheme: () => patch((current) => ({ ...current, theme: current.theme === "light" ? "dark" : "light" })),
+    toggleChatWidth: () => patch((current) => ({ ...current, chatWidth: nextChatWidth(current.chatWidth) })),
     send,
     changeModel,
     openLink: (url: string) => {
