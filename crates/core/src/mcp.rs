@@ -20,23 +20,29 @@ impl McpBuffer {
     }
 
     fn pop_one(&mut self) -> Option<Value> {
-        let header_end = self.pending.windows(4).position(|window| window == b"\r\n\r\n")?;
-        let header = std::str::from_utf8(&self.pending[..header_end]).ok()?;
-        let length = content_length(header)?;
-        let body_start = header_end + 4;
-        if self.pending.len() < body_start + length {
-            return None;
+        loop {
+            let line_end = self.pending.iter().position(|&byte| byte == b'\n')?;
+            let line = self.pending[..=line_end].trim_ascii();
+            if line.is_empty() {
+                self.pending.drain(..=line_end);
+                continue;
+            }
+            match serde_json::from_slice(line) {
+                Ok(value) => {
+                    self.pending.drain(..=line_end);
+                    return Some(value);
+                }
+                Err(_) => {
+                    self.pending.drain(..=line_end);
+                }
+            }
         }
-        let body = self.pending[body_start..body_start + length].to_vec();
-        self.pending.drain(..body_start + length);
-        serde_json::from_slice(&body).ok()
     }
 }
 
 pub fn frame_message(value: &Value) -> Vec<u8> {
-    let body = serde_json::to_vec(value).unwrap_or_default();
-    let mut framed = format!("Content-Length: {}\r\n\r\n", body.len()).into_bytes();
-    framed.extend(body);
+    let mut framed = serde_json::to_vec(value).unwrap_or_default();
+    framed.push(b'\n');
     framed
 }
 
@@ -147,17 +153,6 @@ fn rpc_error(id: Value, code: i64, message: &str) -> Value {
     json!({"jsonrpc": "2.0", "id": id, "error": {"code": code, "message": message}})
 }
 
-fn content_length(header: &str) -> Option<usize> {
-    header.lines().find_map(|line| {
-        let (name, value) = line.split_once(':')?;
-        if name.eq_ignore_ascii_case("content-length") {
-            value.trim().parse().ok()
-        } else {
-            None
-        }
-    })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -171,6 +166,26 @@ mod tests {
         let parsed = buffer.push(&framed[10..]);
         assert_eq!(parsed.len(), 1);
         assert_eq!(parsed[0]["method"], "ping");
+    }
+
+    #[test]
+    fn reads_a_newline_delimited_json_message() {
+        let mut buffer = McpBuffer::new();
+        let parsed = buffer.push(br#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#);
+        assert!(parsed.is_empty());
+        let parsed = buffer.push(b"\n");
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0]["method"], "ping");
+    }
+
+    #[test]
+    fn reads_a_crlf_json_line() {
+        let mut buffer = McpBuffer::new();
+        let parsed = buffer.push(br#"{"jsonrpc":"2.0","id":2,"method":"ping"}"#);
+        assert!(parsed.is_empty());
+        let parsed = buffer.push(b"\r\n");
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0]["id"], 2);
     }
 
     #[test]
