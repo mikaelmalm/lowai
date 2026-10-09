@@ -1,3 +1,5 @@
+import type { Theme } from "../state/types";
+
 export const DEFAULT_TERMINAL_WIDTH = 480;
 export const MIN_TERMINAL_WIDTH = 240;
 export const MIN_CHAT_WIDTH = 320;
@@ -26,6 +28,13 @@ export function afterKill(): { visible: false; alive: false; close: true } {
 
 export function afterExit(): { alive: false; exited: true } {
   return { alive: false, exited: true };
+}
+
+export function terminalPalette(theme: Theme) {
+  if (theme === "light") {
+    return { background: "#f3f5f7", foreground: "#1c242c", cursor: "#1c242c", selectionBackground: "#2f6fdb" };
+  }
+  return { background: "#101418", foreground: "#e7ecf1", cursor: "#e7ecf1", selectionBackground: "#2f6fdb" };
 }
 
 export function shellCd(folder: string, platform: string): string {

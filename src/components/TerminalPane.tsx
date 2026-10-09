@@ -6,6 +6,7 @@ import "@xterm/xterm/css/xterm.css";
 import { useEffect, useRef, useState } from "react";
 import { openSubscription } from "../lib/subscribe";
 import type { Theme } from "../state/types";
+import { terminalPalette } from "../terminal/rules";
 import { TrashIcon } from "./icons";
 
 type Props = {
@@ -18,13 +19,6 @@ type Props = {
   onKill: () => void;
   onExited: () => void;
 };
-
-function terminalTheme(host: HTMLElement) {
-  const style = getComputedStyle(host);
-  const background = style.getPropertyValue("--bg").trim() || "#101418";
-  const foreground = style.getPropertyValue("--ink").trim() || "#e7ecf1";
-  return { background, foreground, cursor: foreground, selectionBackground: "#2f6fdb" };
-}
 
 export function TerminalPane({ sessionId, folder, width, hidden, focusToken, theme, onKill, onExited }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -43,7 +37,7 @@ export function TerminalPane({ sessionId, folder, width, hidden, focusToken, the
       fontSize: 14,
       fontFamily: '"JetBrainsMono Nerd Font Mono", "Noto Color Emoji", monospace',
       scrollback: 5000,
-      theme: terminalTheme(host),
+      theme: terminalPalette(theme),
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
@@ -93,12 +87,12 @@ export function TerminalPane({ sessionId, folder, width, hidden, focusToken, the
   }, [sessionId, attempt]);
 
   useEffect(() => {
+    if (hidden) return;
     const term = termRef.current;
-    const host = hostRef.current;
-    if (!term || !host) return;
-    term.options.theme = terminalTheme(host);
+    if (!term) return;
+    term.options.theme = terminalPalette(theme);
     term.refresh(0, Math.max(0, term.rows - 1));
-  }, [theme]);
+  }, [theme, hidden]);
 
   useEffect(() => {
     if (hidden) return;

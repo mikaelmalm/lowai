@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { afterExit, afterHide, afterKill, clampTerminalWidth, DEFAULT_TERMINAL_WIDTH, openAction, routeBytes, shellCd } from "./rules";
+import { afterExit, afterHide, afterKill, clampTerminalWidth, DEFAULT_TERMINAL_WIDTH, openAction, routeBytes, shellCd, terminalPalette } from "./rules";
 
 describe("terminal rules", () => {
+  it("picks light paper without reading styles from a hidden pane", () => {
+    expect(terminalPalette("light").background).toBe("#f3f5f7");
+    expect(terminalPalette("light").foreground).toBe("#1c242c");
+    expect(terminalPalette("dark").background).toBe("#101418");
+    expect(terminalPalette("dark").foreground).toBe("#e7ecf1");
+  });
+
   it("spawns when no shell is alive and shows a live one", () => {
     expect(openAction(false, false)).toBe("spawn");
     expect(openAction(true, false)).toBe("show");
