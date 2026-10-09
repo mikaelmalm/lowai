@@ -313,6 +313,11 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height:
 }
 .tool-row { display: flex; gap: 8px; align-items: center; background: var(--inset); border-radius: 8px; padding: 6px 8px; margin: 6px 0; }
 .tool-row.spinning code { opacity: 0.7; }
+.tool-run { background: var(--inset); border-radius: 8px; margin: 6px 0; }
+.tool-run summary { cursor: pointer; padding: 6px 8px; color: var(--muted); }
+.tool-run summary:hover { color: var(--ink); }
+.tool-run .tool-row { margin: 0; background: transparent; border-radius: 0; }
+.tool-run .tool-row + .tool-row { border-top: 1px solid var(--line); }
 .system-card { background: var(--note); border-radius: 10px; padding: 10px 12px; white-space: pre-wrap; }
 .code-block { position: relative; }
 .code-block .control { position: absolute; right: 8px; top: 8px; }

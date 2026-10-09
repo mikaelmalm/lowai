@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import type { AgentMessage, Theme } from "../state/types";
+import { presentBlocks } from "../chat/tool-runs";
 import { MarkdownView } from "./MarkdownView";
 import { PermissionCard } from "./PermissionCard";
 import { ToolCallRow } from "./ToolCallRow";
+import { ToolRun } from "./ToolRun";
 
 const THINKING = ["Sketching the next move…", "Reading the room…", "Turning it over…", "Almost there…"];
 
@@ -51,7 +53,9 @@ export function AgentCard({
         {stamp && message.openedAt != null ? <time dateTime={new Date(message.openedAt).toISOString()}>{stamp}</time> : null}
       </header>
       {message.blocks.length === 0 && !message.done ? <p className="thinking"><span aria-hidden="true">🥷</span>{THINKING[tick % THINKING.length]}</p> : null}
-      {message.blocks.map((block) => {
+      {presentBlocks(message.blocks).map((item) => {
+        if (item.kind === "run") return <ToolRun key={item.id} tools={item.tools} folder={folder} />;
+        const block = item.block;
         if (block.type === "text") return <MarkdownView key={block.id} text={block.text} theme={theme} onLink={onLink} />;
         if (block.type === "permission") {
           return (
