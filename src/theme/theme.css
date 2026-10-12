@@ -174,6 +174,15 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height:
 .chat-column { flex: 1; min-width: 0; min-height: 0; display: flex; }
 .sash { width: 8px; flex: none; cursor: col-resize; background: linear-gradient(to right, transparent 3px, var(--control) 3px, var(--control) 5px, transparent 5px); }
 .sash:hover { background: linear-gradient(to right, transparent 3px, var(--line) 3px, var(--line) 5px, transparent 5px); }
+.file-column { display: flex; flex-direction: column; min-height: 0; flex: none; background: var(--bg); border-left: 1px solid var(--line); position: relative; }
+.file-list { flex: none; max-height: 38%; overflow: auto; border-bottom: 1px solid var(--line); }
+.file-list button { display: flex; justify-content: space-between; gap: 8px; width: 100%; text-align: left; background: transparent; border: 0; color: var(--ink); padding: 6px 10px; }
+.file-list button span:last-child { color: var(--muted); }
+.file-list p, .file-body p { color: var(--muted); padding: 10px; margin: 0; }
+.file-body { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
+.file-body pre { overflow: auto; background: var(--code); color: var(--code-ink); padding: 12px; border-radius: 8px; margin: 0; }
+.file-palette { position: absolute; top: 12px; left: 12px; right: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+.file-palette input, .file-palette button { background: var(--raised); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; text-align: left; }
 .terminal-column { display: flex; flex-direction: column; min-height: 0; flex: none; background: var(--bg); }
 .terminal-column.hidden { display: none; }
 .terminal-column header { display: flex; gap: 8px; align-items: center; padding: 8px 10px; }

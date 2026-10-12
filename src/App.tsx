@@ -159,11 +159,13 @@ export function App() {
                 onLink={api.openLink}
                 onPermission={(requestId, allow, input) => api.answerPermission(session.id, requestId, allow, input)}
                 onTerminal={() => (paneVisible ? hideTerminal(session.id) : openTerminal(session.id))}
+                onFiles={() => undefined}
                 onSidebar={api.toggleSidebar}
                 onToggleTheme={api.toggleTheme}
                 onToggleWidth={api.toggleChatWidth}
                 sidebarOpen={!api.state.sidebarHidden}
                 terminalOpen={paneVisible}
+                filesOpen={false}
                 theme={api.state.theme}
                 chatWidth={api.state.chatWidth}
               />

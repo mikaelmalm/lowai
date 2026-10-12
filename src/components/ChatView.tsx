@@ -7,7 +7,7 @@ import { sidebarModifier } from "../sidebar/rules";
 import { readableOn, TURTLES } from "../theme/turtles";
 import { AgentCard } from "./AgentCard";
 import { CardErrorBoundary } from "./CardErrorBoundary";
-import { ColumnWidthIcon, FullWidthIcon, MoonIcon, SidebarIcon, SunIcon, TerminalIcon } from "./icons";
+import { ColumnWidthIcon, FileIcon, FullWidthIcon, MoonIcon, SidebarIcon, SunIcon, TerminalIcon } from "./icons";
 
 type Props = {
   session: Session;
@@ -16,16 +16,18 @@ type Props = {
   onLink: (url: string) => void;
   onPermission: (requestId: string, allow: boolean, input?: unknown) => void;
   onTerminal: () => void;
+  onFiles: () => void;
   onSidebar: () => void;
   onToggleTheme: () => void;
   onToggleWidth: () => void;
   sidebarOpen: boolean;
   terminalOpen: boolean;
+  filesOpen: boolean;
   theme: Theme;
   chatWidth: ChatWidth;
 };
 
-export function ChatView({ session, onSend, onModel, onLink, onPermission, onTerminal, onSidebar, onToggleTheme, onToggleWidth, sidebarOpen, terminalOpen, theme, chatWidth }: Props) {
+export function ChatView({ session, onSend, onModel, onLink, onPermission, onTerminal, onFiles, onSidebar, onToggleTheme, onToggleWidth, sidebarOpen, terminalOpen, filesOpen, theme, chatWidth }: Props) {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
@@ -111,6 +113,16 @@ export function ChatView({ session, onSend, onModel, onLink, onPermission, onTer
             onClick={onToggleWidth}
           >
             {chatWidth === "full" ? <ColumnWidthIcon /> : <FullWidthIcon />}
+          </button>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="Files"
+            aria-pressed={filesOpen}
+            title="Files"
+            onClick={onFiles}
+          >
+            <FileIcon />
           </button>
           <button
             type="button"

@@ -93,11 +93,13 @@ describe("chat header and composer", () => {
         onLink={() => undefined}
         onPermission={() => undefined}
         onTerminal={() => undefined}
+        onFiles={() => undefined}
         onSidebar={() => undefined}
         onToggleTheme={() => undefined}
         onToggleWidth={() => undefined}
         sidebarOpen
         terminalOpen={false}
+        filesOpen={false}
         theme="dark"
         chatWidth="column"
       />,
@@ -116,5 +118,32 @@ describe("chat header and composer", () => {
     expect(html).toContain("</textarea></div><button");
     expect(html).toContain('rows="1"');
     expect(html).toContain("Message Leonardo…");
+  });
+
+  it("presses the Files button while the column is open and places it before Terminal", () => {
+    const html = renderToStaticMarkup(
+      <ChatView
+        session={session}
+        onSend={async () => ({})}
+        onModel={() => undefined}
+        onLink={() => undefined}
+        onPermission={() => undefined}
+        onTerminal={() => undefined}
+        onSidebar={() => undefined}
+        onToggleTheme={() => undefined}
+        onToggleWidth={() => undefined}
+        onFiles={() => undefined}
+        sidebarOpen
+        terminalOpen={false}
+        filesOpen
+        theme="dark"
+        chatWidth="column"
+      />,
+    );
+    const filesAt = html.indexOf('aria-label="Files"');
+    const terminalAt = html.indexOf('aria-label="Terminal"');
+    expect(filesAt).toBeGreaterThan(-1);
+    expect(terminalAt).toBeGreaterThan(filesAt);
+    expect(html).toContain('aria-label="Files" aria-pressed="true"');
   });
 });

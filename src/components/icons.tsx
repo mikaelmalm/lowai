@@ -71,3 +71,12 @@ export function FullWidthIcon() {
     </svg>
   );
 }
+
+export function FileIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M4 2.25h5.1L12.25 5.3V13.75H4z" {...pen} />
+      <path d="M9.1 2.4V5.3h3.05" {...pen} />
+    </svg>
+  );
+}
