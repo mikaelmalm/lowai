@@ -1,7 +1,8 @@
 use serde::Serialize;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::time::UNIX_EPOCH;
 
 pub const PREVIEW_BYTE_CAP: usize = 512 * 1024;
@@ -110,6 +111,76 @@ pub fn preview_file(folder: &Path, raw: &str) -> PreviewFile {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct GitChanges {
+    pub repo: bool,
+    pub rows: Vec<ChangeRow>,
+}
+
+pub fn git_changes(cwd: &Path) -> GitChanges {
+    if !cwd.is_dir() {
+        return GitChanges { repo: false, rows: Vec::new() };
+    }
+    let Ok(output) = Command::new("git").args(["status", "--porcelain", "-z"]).current_dir(cwd).output() else {
+        return GitChanges { repo: false, rows: Vec::new() };
+    };
+    if !output.status.success() {
+        return GitChanges { repo: false, rows: Vec::new() };
+    }
+    GitChanges { repo: true, rows: parse_porcelain(&output.stdout) }
+}
+
+pub fn list_files(cwd: &Path) -> Vec<String> {
+    if !cwd.is_dir() {
+        return Vec::new();
+    }
+    if let Some(paths) = git_ls_files(cwd) {
+        return paths;
+    }
+    let mut paths = Vec::new();
+    walk_files(cwd, cwd, &mut paths);
+    paths.sort();
+    paths
+}
+
+fn git_ls_files(cwd: &Path) -> Option<Vec<String>> {
+    let output = Command::new("git")
+        .args(["ls-files", "-z", "--cached", "--others", "--exclude-standard"])
+        .current_dir(cwd)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let text = String::from_utf8_lossy(&output.stdout);
+    let mut paths: Vec<String> = text.split('\0').filter(|path| !path.is_empty()).map(|path| path.replace('\\', "/")).collect();
+    paths.sort();
+    Some(paths)
+}
+
+fn walk_files(root: &Path, dir: &Path, paths: &mut Vec<String>) {
+    let Ok(entries) = fs::read_dir(dir) else { return };
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+        if name == ".git" || name == "node_modules" {
+            continue;
+        }
+        let path = entry.path();
+        let Ok(file_type) = entry.file_type() else { continue };
+        if file_type.is_symlink() && path.is_dir() {
+            continue;
+        }
+        if path.is_dir() {
+            walk_files(root, &path, paths);
+        } else if path.is_file() {
+            if let Ok(relative) = path.strip_prefix(root) {
+                paths.push(relative.components().map(|part| part.as_os_str().to_string_lossy()).collect::<Vec<_>>().join("/"));
+            }
+        }
+    }
+}
+
 fn empty(kind: &str) -> PreviewFile {
     PreviewFile { kind: kind.into(), text: None, truncated: false, error: None, mtime_ms: None }
 }
@@ -186,5 +257,60 @@ mod tests {
         assert_eq!(preview_file(&folder, "missing.md").kind, "missing");
         assert_eq!(preview_file(&folder, "note.md").kind, "markdown");
         let _ = fs::remove_dir_all(&folder);
+    }
+
+    fn git(dir: &std::path::Path, args: &[&str]) -> bool {
+        std::process::Command::new("git").args(args).current_dir(dir).status().map(|status| status.success()).unwrap_or(false)
+    }
+
+    #[test]
+    fn git_changes_reads_a_repo_and_rejects_a_plain_folder() {
+        let root = scratch("git-changes");
+        let repo = root.join("repo");
+        let plain = root.join("plain");
+        fs::create_dir_all(&repo).unwrap();
+        fs::create_dir_all(&plain).unwrap();
+        assert!(git(&repo, &["init", "-b", "main"]));
+        assert!(git(&repo, &["config", "user.email", "test@example.com"]));
+        assert!(git(&repo, &["config", "user.name", "Test"]));
+        fs::write(repo.join("food.md"), "a\n").unwrap();
+        assert!(git(&repo, &["add", "food.md"]));
+        assert!(git(&repo, &["commit", "-m", "add"]));
+        fs::write(repo.join("food.md"), "a\nb\n").unwrap();
+        let changes = git_changes(&repo);
+        assert!(changes.repo);
+        assert!(changes.rows.iter().any(|row| row.path.ends_with("food.md") && row.label == "modified"));
+        assert!(!git_changes(&plain).repo);
+        assert!(git_changes(&plain).rows.is_empty());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn list_files_uses_git_and_skips_node_modules_outside_a_repo() {
+        let root = scratch("list");
+        let repo = root.join("repo");
+        let plain = root.join("plain");
+        fs::create_dir_all(&repo).unwrap();
+        assert!(git(&repo, &["init", "-b", "main"]));
+        assert!(git(&repo, &["config", "user.email", "test@example.com"]));
+        assert!(git(&repo, &["config", "user.name", "Test"]));
+        fs::write(repo.join("a.ts"), "a").unwrap();
+        fs::write(repo.join(".gitignore"), "secret.env\n").unwrap();
+        assert!(git(&repo, &["add", "a.ts", ".gitignore"]));
+        assert!(git(&repo, &["commit", "-m", "add"]));
+        fs::write(repo.join("b.ts"), "b").unwrap();
+        fs::write(repo.join("secret.env"), "nope").unwrap();
+        let listed = list_files(&repo);
+        assert!(listed.iter().any(|path| path == "a.ts"));
+        assert!(listed.iter().any(|path| path == "b.ts"));
+        assert!(!listed.iter().any(|path| path.contains("secret.env")));
+        fs::create_dir_all(plain.join("notes")).unwrap();
+        fs::create_dir_all(plain.join("node_modules")).unwrap();
+        fs::write(plain.join("notes/food.md"), "soup").unwrap();
+        fs::write(plain.join("node_modules/x.js"), "x").unwrap();
+        let walked = list_files(&plain);
+        assert!(walked.iter().any(|path| path == "notes/food.md"));
+        assert!(!walked.iter().any(|path| path.contains("node_modules")));
+        let _ = fs::remove_dir_all(&root);
     }
 }

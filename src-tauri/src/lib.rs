@@ -91,6 +91,30 @@ fn available_agents() -> Vec<String> {
     lookup_agents()
 }
 
+fn session_folder(cwd: &str) -> PathBuf {
+    let path = ai_shell_core::expand_tilde(cwd);
+    if path.as_os_str() == "." {
+        std::env::current_dir().unwrap_or(path)
+    } else {
+        path
+    }
+}
+
+#[tauri::command]
+fn git_changes(cwd: String) -> ai_shell_core::GitChanges {
+    ai_shell_core::git_changes(&session_folder(&cwd))
+}
+
+#[tauri::command]
+fn list_files(cwd: String) -> Vec<String> {
+    ai_shell_core::list_files(&session_folder(&cwd))
+}
+
+#[tauri::command]
+fn read_preview(cwd: String, path: String) -> ai_shell_core::PreviewFile {
+    ai_shell_core::preview_file(&session_folder(&cwd), &path)
+}
+
 #[tauri::command]
 async fn answer_permission(
     state: State<'_, AppState>,
@@ -256,6 +280,9 @@ pub fn run() {
             set_model,
             close_session,
             available_agents,
+            git_changes,
+            list_files,
+            read_preview,
             answer_permission,
             load_app_state,
             save_app_state,
