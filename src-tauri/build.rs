@@ -10,6 +10,7 @@ fn main() {
                 "git_changes",
                 "list_files",
                 "read_preview",
+                "git_branch",
                 "answer_permission",
                 "load_app_state",
                 "save_app_state",

@@ -11,6 +11,16 @@ export function clampPreviewWidth(width: number, available: number, otherPane: n
   return clampTerminalWidth(width, available - Math.max(0, otherPane));
 }
 
+export const DEFAULT_LIST_HEIGHT = 160;
+
+/** The list hangs from the top of the column. Its bottom edge stays clear of the file body. */
+export function clampListHeight(height: number, columnHeight: number): number {
+  const min = 48;
+  const max = Math.max(min, columnHeight - 80);
+  const desired = Number.isFinite(height) ? height : DEFAULT_LIST_HEIGHT;
+  return Math.min(max, Math.max(min, desired));
+}
+
 export function previewShortcut(
   event: { ctrlKey: boolean; shiftKey: boolean; altKey: boolean; metaKey: boolean; key: string },
   terminalFocused: boolean,

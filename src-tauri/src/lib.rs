@@ -116,6 +116,17 @@ fn read_preview(cwd: String, path: String) -> ai_shell_core::PreviewFile {
 }
 
 #[tauri::command]
+fn git_branch(cwd: String) -> Option<String> {
+    let path = ai_shell_core::expand_tilde(&cwd);
+    let path = if path.as_os_str() == "." {
+        std::env::current_dir().unwrap_or(path)
+    } else {
+        path
+    };
+    ai_shell_core::git_branch(&path)
+}
+
+#[tauri::command]
 async fn answer_permission(
     state: State<'_, AppState>,
     session_id: String,
@@ -283,6 +294,7 @@ pub fn run() {
             git_changes,
             list_files,
             read_preview,
+            git_branch,
             answer_permission,
             load_app_state,
             save_app_state,

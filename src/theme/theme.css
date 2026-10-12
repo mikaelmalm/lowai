@@ -16,6 +16,7 @@
   --ink: var(--chrome-ink);
   --muted: var(--chrome-muted);
   --warn: #f0c6a0;
+  --branch: #8eb6e8;
   --banner: #3a2a1a;
   --note: #2a2420;
   --inset: #12171c;
@@ -36,6 +37,7 @@
   --ink: #1c242c;
   --muted: #5c6c7a;
   --warn: #8f4e12;
+  --branch: #2f6fdb;
   --banner: #f8ecdc;
   --note: #f6f1e8;
   --inset: #e7eef3;
@@ -63,7 +65,7 @@ button:disabled { opacity: 0.45; cursor: default; }
   border-radius: 10px;
   overflow: hidden;
 }
-html.maximized .window { border-radius: 0; border-color: transparent; }
+html.maximized:not(.os-macos) .window { border-radius: 0; border-color: transparent; }
 .titlebar {
   flex: none;
   height: 32px;
@@ -175,7 +177,12 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height:
 .sash { width: 8px; flex: none; cursor: col-resize; background: linear-gradient(to right, transparent 3px, var(--control) 3px, var(--control) 5px, transparent 5px); }
 .sash:hover { background: linear-gradient(to right, transparent 3px, var(--line) 3px, var(--line) 5px, transparent 5px); }
 .file-column { display: flex; flex-direction: column; min-height: 0; flex: none; background: var(--bg); border-left: 1px solid var(--line); position: relative; }
-.file-list { flex: none; max-height: 38%; overflow: auto; border-bottom: 1px solid var(--line); }
+.file-list-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 8px 4px 10px; color: var(--muted); flex: none; }
+.file-list-bar button { background: transparent; border: 0; color: var(--muted); padding: 4px 8px; border-radius: 6px; }
+.file-list-bar button:hover { background: var(--control); color: var(--ink); }
+.file-list { flex: none; overflow: auto; }
+.sash-row { width: auto; height: 8px; cursor: row-resize; background: linear-gradient(to bottom, transparent 3px, var(--control) 3px, var(--control) 5px, transparent 5px); }
+.sash-row:hover { background: linear-gradient(to bottom, transparent 3px, var(--line) 3px, var(--line) 5px, transparent 5px); }
 .file-list button { display: flex; justify-content: space-between; gap: 8px; width: 100%; text-align: left; background: transparent; border: 0; color: var(--ink); padding: 6px 10px; }
 .file-list button span:last-child { color: var(--muted); }
 .file-list p, .file-body p { color: var(--muted); padding: 10px; margin: 0; }
@@ -252,8 +259,18 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height:
   align-items: center;
   text-align: center;
 }
+.chat-name {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+}
 .chat-title strong,
 .chat-title span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-name strong { min-width: 0; }
+.chat-name .branch { flex: 0 1 auto; min-width: 0; color: var(--branch); font-weight: 500; }
 .transcript { flex: 1; min-height: 0; overflow: auto; padding: 16px 16px 40px; overflow-anchor: none; }
 .transcript-body { display: flex; flex-direction: column; gap: 16px; }
 .window[data-chat-width="column"] .transcript-body,

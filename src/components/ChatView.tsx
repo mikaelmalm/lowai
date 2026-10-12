@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { isAtBottom } from "../chat/scroll";
 import { isClearCommand } from "../state/session-rules";
 import { modelsFor } from "../state/agents";
@@ -27,6 +28,39 @@ type Props = {
   theme: Theme;
   chatWidth: ChatWidth;
 };
+
+export function ChatTitle({ label, folder, branch }: { label: string; folder: string; branch: string | null }) {
+  return (
+    <div className="chat-title">
+      <div className="chat-name">
+        <strong>{label}</strong>
+        {branch ? <span className="branch" title={`Branch ${branch}`}>{branch}</span> : null}
+      </div>
+      <span title={folder}>{folder}</span>
+    </div>
+  );
+}
+
+function useGitBranch(folder: string): string | null {
+  const [branch, setBranch] = useState<string | null>(null);
+  useEffect(() => {
+    let stopped = false;
+    setBranch(null);
+    const load = () => {
+      void invoke<string | null>("git_branch", { cwd: folder }).then(
+        (name) => { if (!stopped) setBranch(name); },
+        () => { if (!stopped) setBranch(null); },
+      );
+    };
+    load();
+    const timer = window.setInterval(load, 2000);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+    };
+  }, [folder]);
+  return branch;
+}
 
 export function ChatView({ session, onSend, onModel, onLink, onPermission, onOpenFile, onTerminal, onFiles, onSidebar, onToggleTheme, onToggleWidth, sidebarOpen, terminalOpen, filesOpen, theme, chatWidth }: Props) {
   const [draft, setDraft] = useState("");
@@ -67,6 +101,7 @@ export function ChatView({ session, onSend, onModel, onLink, onPermission, onOpe
     el.style.height = `${Math.min(full, max)}px`;
     el.style.overflowY = full > max ? "auto" : "hidden";
   }, [draft]);
+  const branch = useGitBranch(session.folder);
   const turtle = TURTLES.find((item) => item.name === session.turtle) ?? TURTLES[0];
   const ink = readableOn(turtle.color);
   const models = modelsFor(session.agent);
@@ -86,10 +121,7 @@ export function ChatView({ session, onSend, onModel, onLink, onPermission, onOpe
             <SidebarIcon />
           </button>
         </div>
-        <div className="chat-title">
-          <strong>{session.label}</strong>
-          <span title={session.folder}>{session.folder}</span>
-        </div>
+        <ChatTitle label={session.label} folder={session.folder} branch={branch} />
         <div className="header-slot end">
           <select aria-label="Model" value={session.model} onChange={(event) => onModel(event.target.value)}>
             {modelOptions.map((model) => (

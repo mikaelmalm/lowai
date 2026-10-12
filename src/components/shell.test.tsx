@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ChatView } from "./ChatView";
+import { ChatTitle, ChatView } from "./ChatView";
 import { Sidebar } from "./Sidebar";
 import { freshState } from "../state/session-rules";
 import type { Session } from "../state/types";
@@ -129,10 +129,10 @@ describe("chat header and composer", () => {
         onLink={() => undefined}
         onPermission={() => undefined}
         onTerminal={() => undefined}
+        onFiles={() => undefined}
         onSidebar={() => undefined}
         onToggleTheme={() => undefined}
         onToggleWidth={() => undefined}
-        onFiles={() => undefined}
         sidebarOpen
         terminalOpen={false}
         filesOpen
@@ -145,5 +145,17 @@ describe("chat header and composer", () => {
     expect(filesAt).toBeGreaterThan(-1);
     expect(terminalAt).toBeGreaterThan(filesAt);
     expect(html).toContain('aria-label="Files" aria-pressed="true"');
+  });
+
+  it("shows the git branch beside the folder name", () => {
+    const html = renderToStaticMarkup(<ChatTitle label="unify-mono" folder="/tmp/unify-mono" branch="feature/toolbar" />);
+    const nameAt = html.indexOf("unify-mono");
+    const branchAt = html.indexOf("feature/toolbar");
+    expect(nameAt).toBeGreaterThan(-1);
+    expect(branchAt).toBeGreaterThan(nameAt);
+    expect(html).toContain('class="branch"');
+    expect(html).toContain("/tmp/unify-mono");
+    const plain = renderToStaticMarkup(<ChatTitle label="unify-mono" folder="/tmp/notes" branch={null} />);
+    expect(plain).not.toContain('class="branch"');
   });
 });

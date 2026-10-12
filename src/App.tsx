@@ -315,7 +315,7 @@ export function App() {
                   const startWidth = previewWidth;
                   const bounds = splitRef.current?.clientWidth ?? available;
                   function move(moveEvent: PointerEvent) {
-                    if (sessionId) api.setPreviewWidth(sessionId, clampPreviewWidth(startWidth + (moveEvent.clientX - startX), bounds, paneVisible ? savedTerminal : 0));
+                    if (sessionId) api.setPreviewWidth(sessionId, clampPreviewWidth(startWidth - (moveEvent.clientX - startX), bounds, paneVisible ? savedTerminal : 0));
                   }
                   function up() {
                     window.removeEventListener("pointermove", move);

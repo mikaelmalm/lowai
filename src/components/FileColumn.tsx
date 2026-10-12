@@ -1,7 +1,7 @@
 import hljs from "highlight.js";
-import { useEffect, useLayoutEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { sidebarModifier } from "../sidebar/rules";
-import { filterFiles, highlightLanguage } from "../preview/rules";
+import { clampListHeight, DEFAULT_LIST_HEIGHT, filterFiles, highlightLanguage } from "../preview/rules";
 import type { Theme } from "../state/types";
 import { MarkdownView } from "./MarkdownView";
 
@@ -35,6 +35,9 @@ type Props = {
 
 export function FileColumn({ theme, platform, rows, repo, file, path, palette, files, query, highlight, onQuery, onOpen, onPaletteKey, style }: Props) {
   const matches = filterFiles(files, query);
+  const columnRef = useRef<HTMLElement>(null);
+  const [listOpen, setListOpen] = useState(true);
+  const [listHeight, setListHeight] = useState(DEFAULT_LIST_HEIGHT);
   const bodyRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -44,18 +47,42 @@ export function FileColumn({ theme, platform, rows, repo, file, path, palette, f
   useEffect(() => {
     if (palette) inputRef.current?.focus();
   }, [palette]);
+  function resizeList(event: ReactPointerEvent<HTMLDivElement>) {
+    event.preventDefault();
+    const startY = event.clientY;
+    const start = listHeight;
+    const limit = columnRef.current?.clientHeight ?? start + 80;
+    const move = (moveEvent: PointerEvent) => {
+      setListHeight(clampListHeight(start + (moveEvent.clientY - startY), limit));
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
   return (
-    <aside className="file-column" style={style}>
-      <div className="file-list">
-        {rows.map((row) => (
-          <button key={`${row.label}:${row.path}`} type="button" onClick={() => onOpen(row.path)}>
-            <span>{row.path}</span>
-            <span>{row.label}</span>
-          </button>
-        ))}
-        {rows.length === 0 && repo === true ? <p>No changes.</p> : null}
-        {rows.length === 0 && repo === false ? <p>No git repo.</p> : null}
+    <aside className="file-column" style={style} ref={columnRef}>
+      <div className="file-list-bar">
+        <span>Changes</span>
+        <button type="button" aria-pressed={listOpen} aria-label={listOpen ? "Hide changes" : "Show changes"} onClick={() => setListOpen((open) => !open)}>
+          {listOpen ? "Hide" : "Show"}
+        </button>
       </div>
+      {listOpen ? (
+        <div className="file-list" style={{ height: listHeight }}>
+          {rows.map((row) => (
+            <button key={`${row.label}:${row.path}`} type="button" onClick={() => onOpen(row.path)}>
+              <span>{row.path}</span>
+              <span>{row.label}</span>
+            </button>
+          ))}
+          {rows.length === 0 && repo === true ? <p>No changes.</p> : null}
+          {rows.length === 0 && repo === false ? <p>No git repo.</p> : null}
+        </div>
+      ) : null}
+      {listOpen ? <div className="sash sash-row" aria-label="Resize changes" onPointerDown={resizeList} /> : null}
       <div className="file-body" ref={bodyRef} onScroll={() => { scrollRef.current = bodyRef.current?.scrollTop ?? 0; }}>{renderBody(path, file, theme, platform)}</div>
       {palette ? (
         <div className="file-palette">

@@ -32,6 +32,8 @@ describe("file column", () => {
     const html = renderToStaticMarkup(column({ rows: [{ label: "edited", path: "food.md" }], repo: false, file, path: "food.md" }));
     expect(html).toContain("food.md");
     expect(html).toContain("edited");
+    expect(html).toContain('aria-label="Hide changes"');
+    expect(html).toContain('aria-label="Resize changes"');
     expect(html).toContain("Soup");
   });
 

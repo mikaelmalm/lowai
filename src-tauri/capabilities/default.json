@@ -20,6 +20,7 @@
     "allow-git-changes",
     "allow-list-files",
     "allow-read-preview",
+    "allow-git-branch",
     "allow-answer-permission",
     "allow-load-app-state",
     "allow-save-app-state",

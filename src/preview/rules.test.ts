@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AgentBlock, ChatMessage } from "../state/types";
 import {
+  clampListHeight,
   clampPreviewWidth,
   editedFiles,
   filterFiles,
@@ -28,6 +29,8 @@ describe("preview rules", () => {
   it("clamps the column against the chat and the other pane", () => {
     expect(clampPreviewWidth(800, 1200, 480)).toBe(400);
     expect(clampPreviewWidth(480, 1200, 0)).toBe(480);
+    expect(clampListHeight(400, 300)).toBe(220);
+    expect(clampListHeight(10, 300)).toBe(48);
   });
 
   it("matches the sidebar modifier and ignores the terminal", () => {
