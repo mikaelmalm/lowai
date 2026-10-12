@@ -90,7 +90,7 @@ export function App() {
 
   const width = clampTerminalWidth(session?.terminalWidth ?? DEFAULT_TERMINAL_WIDTH, available);
   const paneVisible = sessionId ? Boolean(panes[sessionId]?.visible) : false;
-  const sidebarWidth = clampSidebarWidth(api.state.sidebarWidth, windowWidth, paneVisible ? width : 0);
+  const sidebarWidth = clampSidebarWidth(api.state.sidebarWidth, windowWidth, paneVisible ? width : 0, 0);
 
   return (
     <div className="window" data-theme={api.state.theme} data-chat-width={api.state.chatWidth}>
@@ -130,7 +130,7 @@ export function App() {
             const bounds = appRef.current?.clientWidth ?? windowWidth;
             const reserve = paneVisible ? width : 0;
             function move(moveEvent: PointerEvent) {
-              api.setSidebarWidth(clampSidebarWidth(startWidth + (moveEvent.clientX - startX), bounds, reserve));
+              api.setSidebarWidth(clampSidebarWidth(startWidth + (moveEvent.clientX - startX), bounds, reserve, 0));
             }
             function up() {
               window.removeEventListener("pointermove", move);

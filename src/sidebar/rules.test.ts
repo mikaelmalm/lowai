@@ -10,6 +10,8 @@ describe("sidebar rules", () => {
     expect(clampSidebarWidth(100, 1400, 0)).toBe(180);
     expect(clampSidebarWidth(Number.NaN, 1400, 0)).toBe(280);
     expect(clampSidebarWidth(400, 500, 200)).toBe(180);
+    expect(clampSidebarWidth(900, 2000, 480, 480)).toBe(720);
+    expect(clampSidebarWidth(280, 1400, 480, 480)).toBe(180);
   });
 
   it("toggles on ctrl+b unless the terminal is focused", () => {

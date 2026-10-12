@@ -1,5 +1,6 @@
 import { reduceBlocks } from "../chat/blocks";
 import { DEFAULT_SIDEBAR_WIDTH } from "../sidebar/rules";
+import { DEFAULT_PREVIEW_WIDTH } from "../preview/rules";
 import { DEFAULT_TERMINAL_WIDTH } from "../terminal/rules";
 import { savedAgent, savedModel } from "./agents";
 import type { AgentEvent, AppState, ChatMessage, ChatWidth, Session, Theme } from "./types";
@@ -42,6 +43,7 @@ export function hydrate(raw: unknown): { state: AppState; corrupt: boolean } {
     agent: savedAgent(session.agent),
     model: savedModel(savedAgent(session.agent), session.model),
     terminalWidth: savedWidth(session.terminalWidth, fallbackWidth),
+    previewWidth: savedWidth(session.previewWidth, DEFAULT_PREVIEW_WIDTH),
   }));
   const activeProjectId = raw.projects.some((project) => project.id === raw.activeProjectId)
     ? raw.activeProjectId

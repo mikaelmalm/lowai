@@ -18,6 +18,7 @@ const session: Session = {
   unread: false,
   status: "asleep",
   terminalWidth: 480,
+  previewWidth: 480,
 };
 
 describe("sidebar", () => {

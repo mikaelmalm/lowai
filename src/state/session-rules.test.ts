@@ -17,6 +17,7 @@ const session = (partial: Partial<Session> = {}): Session => ({
   unread: true,
   status: "running",
   terminalWidth: DEFAULT_TERMINAL_WIDTH,
+  previewWidth: 480,
   ...partial,
 });
 
@@ -55,6 +56,32 @@ describe("session rules", () => {
       sessions: [session({ terminalWidth: Number.NaN })],
     }).state;
     expect(fresh.sessions[0].terminalWidth).toBe(DEFAULT_TERMINAL_WIDTH);
+  });
+
+  it("keeps a preview width on each session", () => {
+    const bare = session();
+    delete (bare as { previewWidth?: number }).previewWidth;
+    const missing = hydrate({
+      projects: [{ id: "p", name: "Personal" }],
+      activeProjectId: "p",
+      activeSessionId: "s1",
+      sessions: [bare],
+    }).state;
+    expect(missing.sessions[0].previewWidth).toBe(480);
+    const kept = hydrate({
+      projects: [{ id: "p", name: "Personal" }],
+      activeProjectId: "p",
+      activeSessionId: "s1",
+      sessions: [session({ previewWidth: 360 })],
+    }).state;
+    expect(kept.sessions[0].previewWidth).toBe(360);
+    const invalid = hydrate({
+      projects: [{ id: "p", name: "Personal" }],
+      activeProjectId: "p",
+      activeSessionId: "s1",
+      sessions: [session({ previewWidth: Number.NaN })],
+    }).state;
+    expect(invalid.sessions[0].previewWidth).toBe(480);
   });
 
   it("loads sidebar width and hidden state", () => {

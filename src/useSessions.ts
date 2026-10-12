@@ -10,6 +10,7 @@ import { answerBlock } from "./chat/blocks";
 import { defaultModel, installedAgent, type AgentId } from "./state/agents";
 import { alertTone, applyEvent, clearedSession, clearsAgentId, freshState, hydrate, isClearCommand, nextChatWidth, shouldNotify, withFolder } from "./state/session-rules";
 import type { AgentEvent, AppState, ChatMessage, Session } from "./state/types";
+import { DEFAULT_PREVIEW_WIDTH } from "./preview/rules";
 import { shellCd, DEFAULT_TERMINAL_WIDTH } from "./terminal/rules";
 import { assignTurtle } from "./theme/turtles";
 
@@ -143,6 +144,7 @@ export function useSessions() {
       unread: false,
       status: "asleep",
       terminalWidth: DEFAULT_TERMINAL_WIDTH,
+      previewWidth: DEFAULT_PREVIEW_WIDTH,
     };
     patch((current) => ({
       ...current,
@@ -407,6 +409,10 @@ export function useSessions() {
     setTerminalWidth: (sessionId: string, width: number) => patch((current) => ({
       ...current,
       sessions: current.sessions.map((session) => (session.id === sessionId ? { ...session, terminalWidth: width } : session)),
+    })),
+    setPreviewWidth: (sessionId: string, width: number) => patch((current) => ({
+      ...current,
+      sessions: current.sessions.map((session) => (session.id === sessionId ? { ...session, previewWidth: width } : session)),
     })),
     setSidebarWidth: (width: number) => patch((current) => ({ ...current, sidebarWidth: width })),
     toggleSidebar: () => patch((current) => ({ ...current, sidebarHidden: !current.sidebarHidden })),

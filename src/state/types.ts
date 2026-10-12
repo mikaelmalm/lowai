@@ -34,6 +34,7 @@ export type Session = {
   unread: boolean;
   status: "asleep" | "running";
   terminalWidth: number;
+  previewWidth: number;
 };
 
 export type Project = { id: string; name: string };
