@@ -1,4 +1,5 @@
 import hljs from "highlight.js";
+import { useEffect, useLayoutEffect, useRef, type CSSProperties } from "react";
 import { sidebarModifier } from "../sidebar/rules";
 import { filterFiles, highlightLanguage } from "../preview/rules";
 import type { Theme } from "../state/types";
@@ -29,12 +30,22 @@ type Props = {
   onQuery: (query: string) => void;
   onOpen: (path: string) => void;
   onPaletteKey: (key: string) => void;
+  style?: CSSProperties;
 };
 
-export function FileColumn({ theme, platform, rows, repo, file, path, palette, files, query, highlight, onQuery, onOpen, onPaletteKey }: Props) {
+export function FileColumn({ theme, platform, rows, repo, file, path, palette, files, query, highlight, onQuery, onOpen, onPaletteKey, style }: Props) {
   const matches = filterFiles(files, query);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  useLayoutEffect(() => {
+    if (bodyRef.current) bodyRef.current.scrollTop = scrollRef.current;
+  }, [file?.text, file?.mtimeMs]);
+  useEffect(() => {
+    if (palette) inputRef.current?.focus();
+  }, [palette]);
   return (
-    <aside className="file-column">
+    <aside className="file-column" style={style}>
       <div className="file-list">
         {rows.map((row) => (
           <button key={`${row.label}:${row.path}`} type="button" onClick={() => onOpen(row.path)}>
@@ -45,10 +56,11 @@ export function FileColumn({ theme, platform, rows, repo, file, path, palette, f
         {rows.length === 0 && repo === true ? <p>No changes.</p> : null}
         {rows.length === 0 && repo === false ? <p>No git repo.</p> : null}
       </div>
-      <div className="file-body">{renderBody(path, file, theme, platform)}</div>
+      <div className="file-body" ref={bodyRef} onScroll={() => { scrollRef.current = bodyRef.current?.scrollTop ?? 0; }}>{renderBody(path, file, theme, platform)}</div>
       {palette ? (
         <div className="file-palette">
           <input
+            ref={inputRef}
             aria-label="Open file"
             value={query}
             onChange={(event) => onQuery(event.target.value)}

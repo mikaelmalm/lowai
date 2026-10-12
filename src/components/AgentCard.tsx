@@ -25,6 +25,7 @@ export function AgentCard({
   theme,
   onLink,
   onPermission,
+  onOpenFile,
 }: {
   message: AgentMessage;
   turtle: string;
@@ -33,6 +34,7 @@ export function AgentCard({
   theme: Theme;
   onLink: (url: string) => void;
   onPermission: (requestId: string, allow: boolean, input?: unknown) => void;
+  onOpenFile?: (path: string) => void;
 }) {
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -54,9 +56,9 @@ export function AgentCard({
       </header>
       {message.blocks.length === 0 && !message.done ? <p className="thinking"><span aria-hidden="true">🥷</span>{THINKING[tick % THINKING.length]}</p> : null}
       {presentBlocks(message.blocks).map((item) => {
-        if (item.kind === "run") return <ToolRun key={item.id} tools={item.tools} folder={folder} />;
+        if (item.kind === "run") return <ToolRun key={item.id} tools={item.tools} folder={folder} onOpen={onOpenFile} />;
         const block = item.block;
-        if (block.type === "text") return <MarkdownView key={block.id} text={block.text} theme={theme} onLink={onLink} />;
+        if (block.type === "text") return <MarkdownView key={block.id} text={block.text} theme={theme} onLink={onLink} onOpenPath={onOpenFile} />;
         if (block.type === "permission") {
           return (
             <PermissionCard
@@ -68,7 +70,7 @@ export function AgentCard({
             />
           );
         }
-        return <ToolCallRow key={block.id} name={block.name} input={block.input} folder={folder} done={block.done} />;
+        return <ToolCallRow key={block.id} name={block.name} input={block.input} folder={folder} done={block.done} onOpen={onOpenFile} />;
       })}
       {message.done ? (
         <footer>

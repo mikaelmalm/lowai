@@ -15,6 +15,7 @@ type Props = {
   onModel: (model: string) => void;
   onLink: (url: string) => void;
   onPermission: (requestId: string, allow: boolean, input?: unknown) => void;
+  onOpenFile?: (path: string) => void;
   onTerminal: () => void;
   onFiles: () => void;
   onSidebar: () => void;
@@ -27,7 +28,7 @@ type Props = {
   chatWidth: ChatWidth;
 };
 
-export function ChatView({ session, onSend, onModel, onLink, onPermission, onTerminal, onFiles, onSidebar, onToggleTheme, onToggleWidth, sidebarOpen, terminalOpen, filesOpen, theme, chatWidth }: Props) {
+export function ChatView({ session, onSend, onModel, onLink, onPermission, onOpenFile, onTerminal, onFiles, onSidebar, onToggleTheme, onToggleWidth, sidebarOpen, terminalOpen, filesOpen, theme, chatWidth }: Props) {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
@@ -147,7 +148,7 @@ export function ChatView({ session, onSend, onModel, onLink, onPermission, onTer
           }
           return (
             <CardErrorBoundary key={message.id}>
-              <AgentCard message={message} turtle={turtle.name} color={turtle.color} folder={session.folder} theme={theme} onLink={onLink} onPermission={onPermission} />
+              <AgentCard message={message} turtle={turtle.name} color={turtle.color} folder={session.folder} theme={theme} onLink={onLink} onPermission={onPermission} onOpenFile={onOpenFile} />
             </CardErrorBoundary>
           );
         })}

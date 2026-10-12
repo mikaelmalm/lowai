@@ -3,17 +3,24 @@ import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
 import { isMermaid } from "../chat/diagram";
+import { localPreviewTarget } from "../preview/rules";
 import type { Theme } from "../state/types";
 import { MermaidBlock } from "./MermaidBlock";
 
-type Props = { text: string; theme: Theme; onLink: (url: string) => void };
+type Props = { text: string; theme: Theme; onLink: (url: string) => void; onOpenPath?: (path: string) => void };
 
-export function MarkdownView({ text, theme, onLink }: Props) {
+export function MarkdownView({ text, theme, onLink, onOpenPath }: Props) {
   const onLinkRef = useRef(onLink);
   onLinkRef.current = onLink;
+  const onOpenRef = useRef(onOpenPath);
+  onOpenRef.current = onOpenPath;
   const components = useMemo(() => ({
     a: ({ href, children }: { href?: string; children?: ReactNode }) => {
       const url = href ?? "";
+      const local = localPreviewTarget(url);
+      if (local && onOpenRef.current) {
+        return <button type="button" onClick={() => onOpenRef.current?.(local)}>{children}</button>;
+      }
       if (!isSafeLink(url)) return <span>{children}</span>;
       return (
         <a href={url} onClick={(event) => { event.preventDefault(); onLinkRef.current(url); }}>
@@ -29,7 +36,10 @@ export function MarkdownView({ text, theme, onLink }: Props) {
     code: ({ className, children }: { className?: string; children?: ReactNode }) => {
       const source = textContent(children).replace(/\n$/, "");
       if (isMermaid(className)) return <MermaidBlock source={source} theme={theme} />;
-      if (!className) return <code>{children}</code>;
+      if (!className) {
+        if (!onOpenRef.current) return <code>{children}</code>;
+        return <button type="button" onClick={() => onOpenRef.current?.(source)}>{children}</button>;
+      }
       return <CodeBlock className={className} source={source}>{children}</CodeBlock>;
     },
   }), [theme]);
