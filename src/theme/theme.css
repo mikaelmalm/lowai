@@ -86,6 +86,9 @@ html.maximized:not(.os-macos) .window { border-radius: 0; border-color: transpar
   font-size: 0.85rem;
 }
 .titlebar-controls { margin-left: auto; display: flex; height: 100%; }
+html.os-macos .titlebar { padding-left: 0; }
+html.os-macos .titlebar-controls { order: -1; margin-left: 0; }
+html.os-macos .titlebar-controls button[aria-label="Close"] { order: -1; }
 .titlebar-controls button {
   width: 40px;
   height: 100%;
