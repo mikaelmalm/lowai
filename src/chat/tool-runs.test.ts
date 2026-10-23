@@ -36,6 +36,17 @@ describe("presentBlocks", () => {
 describe("toolRunSummary", () => {
   const folder = "/work/app";
 
+  it("previews a long live call instead of the whole blob", () => {
+    const body = `${"b".repeat(200)}\nmore\nand more`;
+    const tools = [
+      tool("a", "read_file", { path: "/work/app/a.ts" }),
+      tool("b", "read_file", { path: "/work/app/b.ts" }),
+      tool("c", "grep", { pattern: "x" }),
+      tool("d", "note", { body }, false),
+    ];
+    expect(toolRunSummary(tools, folder)).toBe(`4 tools · running ${"b".repeat(120)}…`);
+  });
+
   it("names the live call while one is still running", () => {
     const tools = [
       tool("a", "read_file", { path: "/work/app/src/a.ts" }),

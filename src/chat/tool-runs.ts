@@ -1,5 +1,5 @@
 import type { AgentBlock } from "../state/types";
-import { toolPresentation } from "./tools";
+import { toolDetail, toolPresentation } from "./tools";
 
 const FOLD_AT = 4;
 
@@ -34,7 +34,7 @@ export function toolRunSummary(blocks: AgentBlock[], folder: string): string {
   const live = [...tools].reverse().find((block) => !block.done);
   if (live) {
     const view = toolPresentation(live.name, live.input, folder);
-    return `${tools.length} tools · ${verbFor(live.name)} ${view.text}`;
+    return `${tools.length} tools · ${verbFor(live.name)} ${toolDetail(view.text).preview}`;
   }
   const counts = { edit: 0, read: 0, search: 0, command: 0 };
   for (const block of tools) counts[kindOf(block.name)] += 1;

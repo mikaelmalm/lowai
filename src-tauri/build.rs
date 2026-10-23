@@ -9,6 +9,7 @@ fn main() {
                 "available_agents",
                 "git_changes",
                 "list_files",
+                "list_mention_dir",
                 "read_preview",
                 "git_branch",
                 "answer_permission",

@@ -1,3 +1,23 @@
+const PREVIEW_CAP = 120;
+
+export function toolDetail(text: string): { long: boolean; markdown: boolean; preview: string } {
+  const lines = text.split("\n");
+  const long = lines.length > 3 || lines.some((line) => line.length > 500);
+  const first = lines.find((line) => line.trim()) ?? "";
+  const trimmed = first.trim();
+  const preview = trimmed.length <= PREVIEW_CAP ? trimmed : `${trimmed.slice(0, PREVIEW_CAP)}…`;
+  return { long, markdown: looksLikeMarkdown(text), preview };
+}
+
+function looksLikeMarkdown(text: string): boolean {
+  if (text.includes("```")) return true;
+  if (/^#{1,6}\s+\S/m.test(text)) return true;
+  if (/^(?:[-*+]|\d+\.)\s+\S/m.test(text)) return true;
+  if (/\[[^\]\n]+\]\([^)\n]+\)/.test(text)) return true;
+  if (/\*\*[^*\n]+\*\*/.test(text)) return true;
+  return false;
+}
+
 export function toolPresentation(name: string, input: unknown, folder: string): { icon: string; text: string } {
   const record = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
   const path = stringField(record, ["path", "file_path", "target_file", "file"]);

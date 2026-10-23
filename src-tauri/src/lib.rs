@@ -111,6 +111,11 @@ fn list_files(cwd: String) -> Vec<String> {
 }
 
 #[tauri::command]
+fn list_mention_dir(cwd: String, relative: String) -> Vec<ai_shell_core::DirEntry> {
+    ai_shell_core::list_mention_dir(&session_folder(&cwd), &relative)
+}
+
+#[tauri::command]
 fn read_preview(cwd: String, path: String) -> ai_shell_core::PreviewFile {
     ai_shell_core::preview_file(&session_folder(&cwd), &path)
 }
@@ -293,6 +298,7 @@ pub fn run() {
             available_agents,
             git_changes,
             list_files,
+            list_mention_dir,
             read_preview,
             git_branch,
             answer_permission,

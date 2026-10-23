@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-mention-dir"
+description = "Enables the list_mention_dir command without any pre-configured scope."
+commands.allow = ["list_mention_dir"]
+
+[[permission]]
+identifier = "deny-list-mention-dir"
+description = "Denies the list_mention_dir command without any pre-configured scope."
+commands.deny = ["list_mention_dir"]

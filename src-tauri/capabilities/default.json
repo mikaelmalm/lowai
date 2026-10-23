@@ -19,6 +19,7 @@
     "allow-available-agents",
     "allow-git-changes",
     "allow-list-files",
+    "allow-list-mention-dir",
     "allow-read-preview",
     "allow-git-branch",
     "allow-answer-permission",

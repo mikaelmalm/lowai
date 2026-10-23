@@ -339,10 +339,19 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height:
 }
 .tool-row { display: flex; gap: 8px; align-items: center; background: var(--inset); border-radius: 8px; padding: 6px 8px; margin: 6px 0; }
 button.tool-row { width: 100%; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.tool-row code { min-width: 0; overflow-wrap: anywhere; }
 .tool-row.spinning code { opacity: 0.7; }
+.tool-row .tool-markdown { min-width: 0; flex: 1; }
+.tool-row .tool-markdown p { margin: 0; }
+.tool-row.tool-fold { display: block; }
+.tool-fold summary { cursor: pointer; }
+.tool-fold .tool-line { display: inline-flex; gap: 8px; align-items: center; max-width: calc(100% - 1.2rem); min-width: 0; vertical-align: middle; }
+.tool-fold summary code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tool-fold .tool-body { min-width: 0; padding: 4px 0 2px 1.4rem; }
+.tool-fold .tool-body pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .tool-run { background: var(--inset); border-radius: 8px; margin: 6px 0; }
-.tool-run summary { cursor: pointer; padding: 6px 8px; color: var(--muted); }
-.tool-run summary:hover { color: var(--ink); }
+.tool-run > summary { cursor: pointer; padding: 6px 8px; color: var(--muted); }
+.tool-run > summary:hover { color: var(--ink); }
 .tool-run .tool-row { margin: 0; background: transparent; border-radius: 0; }
 .tool-run .tool-row + .tool-row { border-top: 1px solid var(--line); }
 .system-card { background: var(--note); border-radius: 10px; padding: 10px 12px; white-space: pre-wrap; }
@@ -375,6 +384,7 @@ button.tool-row { width: 100%; border: 0; color: inherit; font: inherit; text-al
   pointer-events: auto;
 }
 .composer-field {
+  position: relative;
   flex: 1;
   min-width: 0;
   display: flex;
@@ -383,6 +393,34 @@ button.tool-row { width: 100%; border: 0; color: inherit; font: inherit; text-al
   border: 1px solid var(--line);
   border-radius: 16px;
 }
+.mention-menu {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 6px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 4px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.composer .mention-menu button {
+  align-self: stretch;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  padding: 6px 8px;
+  line-height: 1.3;
+}
+.composer .mention-menu button[aria-selected="true"] { background: var(--control); }
 .composer-field:focus-within { border-color: var(--turtle); box-shadow: 0 0 0 1px var(--turtle); }
 .composer textarea {
   flex: 1;

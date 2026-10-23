@@ -56,7 +56,9 @@ export function AgentCard({
       </header>
       {message.blocks.length === 0 && !message.done ? <p className="thinking"><span aria-hidden="true">🥷</span>{THINKING[tick % THINKING.length]}</p> : null}
       {presentBlocks(message.blocks).map((item) => {
-        if (item.kind === "run") return <ToolRun key={item.id} tools={item.tools} folder={folder} onOpen={onOpenFile} />;
+        if (item.kind === "run") {
+          return <ToolRun key={item.id} tools={item.tools} folder={folder} onOpen={onOpenFile} theme={theme} onLink={onLink} />;
+        }
         const block = item.block;
         if (block.type === "text") return <MarkdownView key={block.id} text={block.text} theme={theme} onLink={onLink} onOpenPath={onOpenFile} />;
         if (block.type === "permission") {
@@ -70,7 +72,18 @@ export function AgentCard({
             />
           );
         }
-        return <ToolCallRow key={block.id} name={block.name} input={block.input} folder={folder} done={block.done} onOpen={onOpenFile} />;
+        return (
+          <ToolCallRow
+            key={block.id}
+            name={block.name}
+            input={block.input}
+            folder={folder}
+            done={block.done}
+            onOpen={onOpenFile}
+            theme={theme}
+            onLink={onLink}
+          />
+        );
       })}
       {message.done ? (
         <footer>

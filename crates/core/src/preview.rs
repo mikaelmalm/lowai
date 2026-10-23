@@ -130,6 +130,36 @@ pub fn git_changes(cwd: &Path) -> GitChanges {
     GitChanges { repo: true, rows: parse_porcelain(&output.stdout) }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct DirEntry {
+    pub name: String,
+    pub dir: bool,
+}
+
+pub fn list_mention_dir(cwd: &Path, relative: &str) -> Vec<DirEntry> {
+    let relative = relative.replace('\\', "/");
+    if relative.is_empty() || absolute_mention(&relative) || relative.contains('\0') || !cwd.is_dir() {
+        return Vec::new();
+    }
+    let Ok(read) = fs::read_dir(cwd.join(&relative)) else {
+        return Vec::new();
+    };
+    let mut entries = Vec::new();
+    for entry in read.flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if name.is_empty() || name == "." || name == ".." {
+            continue;
+        }
+        entries.push(DirEntry { dir: entry.path().is_dir(), name });
+    }
+    entries.sort_by(|left, right| right.dir.cmp(&left.dir).then_with(|| left.name.cmp(&right.name)));
+    entries
+}
+
+fn absolute_mention(relative: &str) -> bool {
+    relative.starts_with('/') || relative.starts_with('~') || relative.contains(':')
+}
+
 pub fn list_files(cwd: &Path) -> Vec<String> {
     if !cwd.is_dir() {
         return Vec::new();
@@ -311,6 +341,22 @@ mod tests {
         let walked = list_files(&plain);
         assert!(walked.iter().any(|path| path == "notes/food.md"));
         assert!(!walked.iter().any(|path| path.contains("node_modules")));
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn list_mention_dir_lists_a_parent_and_rejects_absolute() {
+        let root = scratch("mention");
+        let session = root.join("session");
+        fs::create_dir_all(session.join("inner")).unwrap();
+        fs::write(root.join("my-file.txt"), "x").unwrap();
+        fs::create_dir(root.join("other")).unwrap();
+        let listed = list_mention_dir(&session, "..");
+        assert!(listed.iter().any(|entry| entry.name == "my-file.txt" && !entry.dir));
+        assert!(listed.iter().any(|entry| entry.name == "other" && entry.dir));
+        assert!(list_mention_dir(&session, "/etc").is_empty());
+        assert!(list_mention_dir(&session, "C:/Windows").is_empty());
+        assert!(list_mention_dir(&session, "../missing").is_empty());
         let _ = fs::remove_dir_all(&root);
     }
 }

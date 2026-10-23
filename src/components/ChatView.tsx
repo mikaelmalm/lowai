@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { activeMention, applyMention, mentionChoices, mentionKey, mentionTarget, type MentionEntry } from "../chat/mention";
 import { isAtBottom } from "../chat/scroll";
 import { isClearCommand } from "../state/session-rules";
 import { modelsFor } from "../state/agents";
@@ -64,7 +65,12 @@ function useGitBranch(folder: string): string | null {
 
 export function ChatView({ session, onSend, onModel, onLink, onPermission, onOpenFile, onTerminal, onFiles, onSidebar, onToggleTheme, onToggleWidth, sidebarOpen, terminalOpen, filesOpen, theme, chatWidth }: Props) {
   const [draft, setDraft] = useState("");
+  const [cursor, setCursor] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [files, setFiles] = useState<string[]>([]);
+  const [dirRows, setDirRows] = useState<{ name: string; dir: boolean }[]>([]);
+  const [highlight, setHighlight] = useState(0);
+  const [closedQuery, setClosedQuery] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
   const field = useRef<HTMLTextAreaElement>(null);
@@ -101,6 +107,48 @@ export function ChatView({ session, onSend, onModel, onLink, onPermission, onOpe
     el.style.height = `${Math.min(full, max)}px`;
     el.style.overflowY = full > max ? "auto" : "hidden";
   }, [draft]);
+  const mention = activeMention(draft, cursor);
+  const target = mention ? mentionTarget(mention.query) : null;
+  const menuOpen = mention != null && target != null && target.kind !== "reject" && mention.query !== closedQuery;
+  const choices = menuOpen && target ? mentionChoices(target, files, dirRows) : [];
+  const shown = Math.min(highlight, Math.max(choices.length - 1, 0));
+  const wantsFiles = menuOpen && target?.kind === "files";
+  const mentionDir = menuOpen && target?.kind === "dir" ? target.dir : null;
+  useEffect(() => {
+    setHighlight(0);
+  }, [mention?.query]);
+  useEffect(() => {
+    if (!wantsFiles) return;
+    let stopped = false;
+    void invoke<string[]>("list_files", { cwd: session.folder }).then(
+      (rows) => { if (!stopped) setFiles(rows); },
+      () => { if (!stopped) setFiles([]); },
+    );
+    return () => { stopped = true; };
+  }, [wantsFiles, session.folder]);
+  useEffect(() => {
+    if (mentionDir == null) return;
+    let stopped = false;
+    setDirRows([]);
+    void invoke<{ name: string; dir: boolean }[]>("list_mention_dir", { cwd: session.folder, relative: mentionDir }).then(
+      (rows) => { if (!stopped) setDirRows(rows); },
+      () => { if (!stopped) setDirRows([]); },
+    );
+    return () => { stopped = true; };
+  }, [mentionDir, session.folder]);
+  function acceptMention(entry: MentionEntry) {
+    if (!mention) return;
+    const next = applyMention(draft, mention.start, cursor, entry.label, entry.dir);
+    setDraft(next.text);
+    setCursor(next.cursor);
+    const caret = next.cursor;
+    window.requestAnimationFrame(() => {
+      const el = field.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(caret, caret);
+    });
+  }
   const branch = useGitBranch(session.folder);
   const turtle = TURTLES.find((item) => item.name === session.turtle) ?? TURTLES[0];
   const ink = readableOn(turtle.color);
@@ -208,14 +256,58 @@ export function ChatView({ session, onSend, onModel, onLink, onPermission, onOpe
               value={draft}
               placeholder={`Message ${turtle.name}…`}
               rows={1}
-              onChange={(event) => setDraft(event.target.value)}
+              onChange={(event) => {
+                setDraft(event.target.value);
+                setCursor(event.target.selectionStart);
+              }}
+              onSelect={(event) => setCursor(event.currentTarget.selectionStart)}
               onKeyDown={(event) => {
+                if (menuOpen && choices.length > 0 && !(event.key === "Enter" && event.shiftKey)) {
+                  const action = mentionKey(event.key, shown, choices.length);
+                  if (action.type === "move") {
+                    event.preventDefault();
+                    setHighlight(action.highlight);
+                    return;
+                  }
+                  if (action.type === "close") {
+                    event.preventDefault();
+                    setClosedQuery(mention?.query ?? "");
+                    return;
+                  }
+                  if (action.type === "accept") {
+                    event.preventDefault();
+                    const entry = choices[shown];
+                    if (entry) acceptMention(entry);
+                    return;
+                  }
+                }
+                if (event.key === "Escape" && menuOpen) {
+                  event.preventDefault();
+                  setClosedQuery(mention?.query ?? "");
+                  return;
+                }
                 if (event.key === "Enter" && !event.shiftKey) {
                   event.preventDefault();
                   event.currentTarget.form?.requestSubmit();
                 }
               }}
             />
+            {menuOpen && choices.length > 0 ? (
+              <div className="mention-menu" role="listbox" aria-label="Paths">
+                {choices.map((entry, index) => (
+                  <button
+                    type="button"
+                    key={`${entry.label}:${index}`}
+                    role="option"
+                    aria-selected={index === shown}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => acceptMention(entry)}
+                  >
+                    {entry.dir ? `${entry.label}/` : entry.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
           <button type="submit" style={ink} disabled={busy || !draft.trim()}>
             Send
