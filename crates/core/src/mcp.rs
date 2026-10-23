@@ -70,7 +70,7 @@ pub fn mcp_action(message: &Value, fallback_seq: u64) -> McpAction {
                 "result": {
                     "protocolVersion": version,
                     "capabilities": {"tools": {}},
-                    "serverInfo": {"name": "lowai", "version": "0.1.0"}
+                    "serverInfo": {"name": "lowai", "version": "0.3.0"}
                 }
             }))
         }
