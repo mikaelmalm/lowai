@@ -101,18 +101,20 @@ export function Sidebar(props: Props) {
         )}
       </div>
       <div className="session-actions">
-        <label>
-          Agent
-          <select
-            aria-label="Agent"
-            value={selectedAgent}
-            onChange={(event) => props.onAgent(event.target.value as AgentId)}
-          >
-            {props.agents.map((agent) => (
-              <option key={agent} value={agent}>{agent}</option>
-            ))}
-          </select>
-        </label>
+        {props.agents.length > 1 ? (
+          <label>
+            Agent
+            <select
+              aria-label="Agent"
+              value={selectedAgent}
+              onChange={(event) => props.onAgent(event.target.value as AgentId)}
+            >
+              {props.agents.map((agent) => (
+                <option key={agent} value={agent}>{agent}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <button type="button" onClick={props.onNewSession}>New session</button>
         <button type="button" onClick={props.onBrowse}>Browse…</button>
       </div>

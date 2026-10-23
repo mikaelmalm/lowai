@@ -48,7 +48,7 @@ describe("sidebar", () => {
     expect(html).toContain("session-tag");
     expect(html).toContain("sonnet");
     expect(html).toContain("New session");
-    expect(html).toContain('<option value="claude" selected="">claude</option>');
+    expect(html).not.toContain('aria-label="Agent"');
     expect(html).toContain("Browse");
     expect(html).not.toContain("Light mode");
     const nameAt = html.indexOf("session-name");
@@ -80,6 +80,29 @@ describe("sidebar", () => {
     );
     expect(html).toContain("New project");
     expect(html).toContain(">Remove<");
+  });
+
+  it("shows the agent picker when more than one agent is installed", () => {
+    const state = freshState();
+    const html = renderToStaticMarkup(
+      <Sidebar
+        state={state}
+        onProject={() => undefined}
+        onNewProject={() => undefined}
+        onRenameProject={() => undefined}
+        onDeleteProject={() => undefined}
+        onSelect={() => undefined}
+        onRename={() => undefined}
+        onClose={() => undefined}
+        agents={["grok", "claude"]}
+        onAgent={() => undefined}
+        onNewSession={() => undefined}
+        onBrowse={() => undefined}
+      />,
+    );
+    expect(html).toContain('aria-label="Agent"');
+    expect(html).toContain('<option value="grok"');
+    expect(html).toContain('<option value="claude"');
   });
 });
 
