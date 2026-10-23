@@ -884,6 +884,11 @@ pub fn claude_turn_args(model: &str, resume: Option<&str>, mcp_config: &Path, pr
 fn prepare_cli(bin: &crate::platform::CliBin, cwd: &Path, args: &[String]) -> Command {
     let spawn = crate::platform::cli_spawn(bin, cwd);
     let mut command = Command::new(spawn.program);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(crate::platform::CREATE_NO_WINDOW);
+    }
     command.args(&spawn.args_prefix).args(args);
     if let Some(dir) = spawn.current_dir {
         command.current_dir(dir);
@@ -962,7 +967,7 @@ fn spawn_reader(
         let stderr = stderr_buf.lock().await.clone();
         let waiters: Vec<_> = pending.lock().await.drain().map(|(_, tx)| tx).collect();
         for tx in waiters {
-            let _ = tx.send(Err(json!({"message": "session process exited"})));
+            let _ = tx.send(Err(json!({"message": exit_message(&stderr)})));
         }
         if owned {
             emit(HostEvent::ProcessExited { session_id: app_id, stderr });
@@ -1074,6 +1079,15 @@ async fn handshake(
     Ok(agent_id)
 }
 
+fn exit_message(stderr: &str) -> String {
+    let stderr = stderr.trim();
+    if stderr.is_empty() {
+        "session process exited".into()
+    } else {
+        format!("session process exited: {stderr}")
+    }
+}
+
 fn is_missing_message(message: &str) -> bool {
     let value = serde_json::from_str::<Value>(message).unwrap_or(Value::Null);
     is_missing_session(&value) || message.contains("FS_NOT_FOUND") || message.contains("Path not found")
@@ -1094,7 +1108,7 @@ async fn rpc(
     outbound.send(line).map_err(|_| "session process is gone".to_string())?;
     match tokio::time::timeout(Duration::from_secs(90), rx).await {
         Ok(Ok(Ok(value))) => Ok(value),
-        Ok(Ok(Err(err))) => Err(err.to_string()),
+        Ok(Ok(Err(err))) => Err(err.get("message").and_then(Value::as_str).unwrap_or("session process exited").to_string()),
         Ok(Err(_)) => Err("session process exited".into()),
         Err(_) => Err(format!("{method} timed out")),
     }
@@ -1120,6 +1134,12 @@ fn write_prompt(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn exit_message_keeps_the_agent_stderr() {
+        assert_eq!(exit_message(""), "session process exited");
+        assert_eq!(exit_message("  grok: not a terminal\n"), "session process exited: grok: not a terminal");
+    }
 
     #[test]
     fn grok_launch_has_no_guard_directory() {

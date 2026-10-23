@@ -1,6 +1,18 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+
+/// Console-subsystem children of a windowed app otherwise open a terminal.
+pub const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+pub fn hide_console(command: &mut Command) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    let _ = command;
+}
 use std::sync::OnceLock;
 use std::time::Duration;
 
@@ -274,6 +286,7 @@ done
 printf "%s\n" ___WSL_END___
 "#;
     let mut cmd = Command::new("wsl.exe");
+    hide_console(&mut cmd);
     cmd.args(["-e", "sh", "-c", script]).stdin(std::process::Stdio::null());
     // A login profile often exits non-zero after the probe has already printed.
     let Ok(output) = capture(cmd, Duration::from_secs(15), true) else {
@@ -298,6 +311,7 @@ fn read_login_path() -> Option<String> {
         let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".into());
         let script = format!("echo {PATH_START}; printf '%s\\n' \"$PATH\"; echo {PATH_END}");
         let mut cmd = Command::new(shell);
+        hide_console(&mut cmd);
         cmd.args(["-ilc", &script]).stdin(std::process::Stdio::null());
         let output = run_with_timeout(cmd, Duration::from_secs(8)).ok()?;
         let text = String::from_utf8_lossy(&output);
@@ -322,6 +336,7 @@ fn windows_path() -> Option<String> {
         "Write-Output '{PATH_START}'; Write-Output ([Environment]::GetEnvironmentVariable('Path','User')); Write-Output ([Environment]::GetEnvironmentVariable('Path','Machine')); Write-Output '{PATH_END}'"
     );
     let mut cmd = Command::new("powershell.exe");
+    hide_console(&mut cmd);
     cmd.args(["-NoProfile", "-NonInteractive", "-Command", &script]).stdin(std::process::Stdio::null());
     let output = run_with_timeout(cmd, Duration::from_secs(8)).ok()?;
     let text = String::from_utf8_lossy(&output);
@@ -333,6 +348,7 @@ fn run_with_timeout(cmd: Command, limit: Duration) -> std::io::Result<Vec<u8>> {
 }
 
 fn capture(mut cmd: Command, limit: Duration, keep_failure: bool) -> std::io::Result<Vec<u8>> {
+    hide_console(&mut cmd);
     let mut child = cmd.stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::null()).spawn()?;
     let start = std::time::Instant::now();
     loop {
@@ -385,6 +401,17 @@ mod tests {
         assert!(!allow_navigation("https://example.com", false));
         assert!(allow_navigation("http://localhost:1420/", true));
         assert!(!allow_navigation("http://localhost:1420/", false));
+    }
+
+    #[test]
+    fn windows_console_children_are_hidden() {
+        assert_eq!(CREATE_NO_WINDOW, 0x08000000);
+        let mut command = Command::new(if cfg!(windows) { "cmd" } else { "true" });
+        if cfg!(windows) {
+            command.arg("/c").arg("exit 0");
+        }
+        hide_console(&mut command);
+        assert!(command.status().unwrap().success());
     }
 
     #[test]

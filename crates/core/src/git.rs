@@ -12,7 +12,9 @@ pub fn parse_branch_name(output: &str) -> Option<String> {
 }
 
 pub fn git_branch(cwd: &Path) -> Option<String> {
-    let output = Command::new("git")
+    let mut command = Command::new("git");
+    crate::platform::hide_console(&mut command);
+    let output = command
         .args(["branch", "--show-current"])
         .current_dir(cwd)
         .output()

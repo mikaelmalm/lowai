@@ -121,7 +121,9 @@ pub fn git_changes(cwd: &Path) -> GitChanges {
     if !cwd.is_dir() {
         return GitChanges { repo: false, rows: Vec::new() };
     }
-    let Ok(output) = Command::new("git").args(["status", "--porcelain", "-z"]).current_dir(cwd).output() else {
+    let mut command = Command::new("git");
+    crate::platform::hide_console(&mut command);
+    let Ok(output) = command.args(["status", "--porcelain", "-z"]).current_dir(cwd).output() else {
         return GitChanges { repo: false, rows: Vec::new() };
     };
     if !output.status.success() {
@@ -174,7 +176,9 @@ pub fn list_files(cwd: &Path) -> Vec<String> {
 }
 
 fn git_ls_files(cwd: &Path) -> Option<Vec<String>> {
-    let output = Command::new("git")
+    let mut command = Command::new("git");
+    crate::platform::hide_console(&mut command);
+    let output = command
         .args(["ls-files", "-z", "--cached", "--others", "--exclude-standard"])
         .current_dir(cwd)
         .output()
